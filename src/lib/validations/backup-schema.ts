@@ -6,10 +6,6 @@ export const createBackupConfigSchema = (t: (key: string) => string) => z.object
     type: z.enum(["full", "incremental", "sync"], {
         required_error: t("ui.backup.validation.typeRequired"),
     }),
-    cronStrategy: z.enum(["daily", "weekly", "monthly", "custom"], {
-        required_error: t("ui.backup.validation.strategyRequired"),
-    }),
-    cronExpression: z.string().optional(),
     storageIds: z.string().refine((val) => {
         try {
             const arr = JSON.parse(val);
@@ -23,14 +19,6 @@ export const createBackupConfigSchema = (t: (key: string) => string) => z.object
     passwordMode: z.number().int().min(0).max(2).default(0),
     passwordValue: z.string().optional(),
     retentionDays: z.number().int().min(-1, t("ui.backup.validation.retentionDaysMin")).optional(),
-}).refine((data) => {
-    if (data.cronStrategy === "custom" && !data.cronExpression) {
-        return false;
-    }
-    return true;
-}, {
-    message: t("ui.backup.validation.cronExpressionRequired"),
-    path: ["cronExpression"],
 });
 
 export type BackupFormData = z.infer<ReturnType<typeof createBackupConfigSchema>>;

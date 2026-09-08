@@ -11,32 +11,36 @@ describe("notification settings", () => {
     beforeEach(() => { vi.clearAllMocks(); mocks.list.mockImplementation((callback: (items: WebhookSubscription[]) => void) => callback([])); });
     afterEach(cleanup);
 
-    it("defaults new channels to task reminders and uses the Bark default URL", () => {
+    const chooseProvider = (providerKey: string) => {
+        fireEvent.click(screen.getByLabelText("ui.webhook.provider"));
+        const options = screen.getAllByText(providerKey);
+        fireEvent.click(options[options.length - 1]);
+    };
+
+    it("keeps channel settings independent from automation triggers", () => {
         render(<WebhookSettings />);
         fireEvent.click(screen.getByTitle("ui.webhook.add"));
-        expect(screen.getByLabelText("ui.webhook.mode")).toHaveValue("reminder");
-        expect(screen.getByLabelText("ui.webhook.timezone")).toHaveValue("Asia/Shanghai");
-        expect(screen.getByText("ui.webhook.reminderExample")).toBeInTheDocument();
-        expect(screen.getByText("ui.webhook.reminderDetails")).toBeInTheDocument();
-        expect(screen.getByLabelText("ui.webhook.pathPrefix")).toHaveAttribute("placeholder", "ui.webhook.pathPrefixPlaceholder");
-        expect(screen.getByLabelText("ui.webhook.pathGlob")).toHaveAttribute("placeholder", "ui.webhook.pathGlobPlaceholder");
-        fireEvent.change(screen.getByLabelText("ui.webhook.provider"), { target: { value: "bark" } });
+        expect(screen.queryByLabelText("ui.webhook.mode")).not.toBeInTheDocument();
+        expect(screen.queryByLabelText("ui.webhook.timezone")).not.toBeInTheDocument();
+        expect(screen.queryByLabelText("ui.webhook.pathPrefix")).not.toBeInTheDocument();
+        expect(screen.getByLabelText("ui.webhook.titleTemplate")).toHaveValue("ui.webhook.defaultNoteTitleTemplate");
+        chooseProvider("ui.webhook.providerBark");
         expect(screen.getByLabelText("ui.webhook.endpoint")).toHaveValue("https://api.day.app");
         expect(screen.getByLabelText("ui.webhook.deviceKey")).toBeRequired();
         fireEvent.click(screen.getByText("ui.webhook.test"));
-        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "bark", mode: "reminder" }));
+        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "bark" }));
     });
 
     it("requires a replacement key when an existing channel changes provider", () => {
         mocks.list.mockImplementation((callback: (items: unknown[]) => void) => callback([{
-            id: 1, provider: "serverchan", mode: "reminder", timezone: "UTC", enabled: true,
-            hasSecret: true, url: "", actions: [], pathPrefix: "", pathGlob: "", bodySubstring: "",
+            id: 1, provider: "serverchan", enabled: true,
+            hasSecret: true, url: "", titleTemplate: "", bodyTemplate: "",
         }]));
         render(<WebhookSettings />);
         fireEvent.click(screen.getByTitle("ui.common.edit"));
         expect(screen.getByLabelText("ui.webhook.sendKey")).not.toBeRequired();
         fireEvent.change(screen.getByLabelText("ui.webhook.sendKey"), { target: { value: "old-key" } });
-        fireEvent.change(screen.getByLabelText("ui.webhook.provider"), { target: { value: "bark" } });
+        chooseProvider("ui.webhook.providerBark");
         expect(screen.getByLabelText("ui.webhook.deviceKey")).toHaveValue("");
         expect(screen.getByLabelText("ui.webhook.deviceKey")).toBeRequired();
     });
@@ -44,9 +48,9 @@ describe("notification settings", () => {
     it("shows method and headers for a custom webhook", () => {
         render(<WebhookSettings />);
         fireEvent.click(screen.getByTitle("ui.webhook.add"));
-        fireEvent.change(screen.getByLabelText("ui.webhook.provider"), { target: { value: "custom" } });
+        chooseProvider("ui.webhook.providerCustom");
         expect(screen.getByLabelText("ui.webhook.customEndpoint")).toBeRequired();
-        expect(screen.getByLabelText("ui.webhook.method")).toHaveValue("POST");
+        expect(screen.getByLabelText("ui.webhook.method")).toHaveTextContent("ui.webhook.methodPost");
         fireEvent.change(screen.getByLabelText("ui.webhook.headers"), { target: { value: "Authorization: Bearer token" } });
         expect(mocks.test).not.toHaveBeenCalled();
         fireEvent.click(screen.getByText("ui.webhook.test"));

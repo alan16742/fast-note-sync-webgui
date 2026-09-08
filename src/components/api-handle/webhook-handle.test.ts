@@ -9,8 +9,7 @@ vi.mock("@/components/common/Toast", () => ({ toast: { success: mocks.success } 
 vi.mock("react-i18next", async (importOriginal) => ({ ...await importOriginal<typeof import("react-i18next")>(), useTranslation: () => ({ t: mocks.t }) }));
 
 const request: WebhookSubscriptionRequest = {
-    provider: "bark", mode: "reminder", timezone: "UTC", enabled: true, url: "", method: "POST", headers: {}, secret: "key",
-    vaultId: 0, actions: [], pathPrefix: "", pathGlob: "", bodySubstring: "", bodyRegex: "", bodyMaxBytes: 65536,
+    provider: "bark", enabled: true, url: "", method: "POST", headers: {}, secret: "key",
     titleTemplate: "{{title}}", bodyTemplate: "{{content}}",
 };
 
@@ -19,22 +18,22 @@ describe("notification API handling", () => {
     afterEach(() => vi.unstubAllGlobals());
 
     it("keeps the editor open and reports positive business error codes", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ code: 10001, message: "Invalid parameters", details: ["invalid timezone"] }) }));
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ code: 10001, message: "Invalid parameters", details: ["invalid template"] }) }));
         const callback = vi.fn();
         const { result } = renderHook(() => useWebhookHandle());
         await act(async () => result.current.handleWebhookSave(request, callback));
         expect(callback).not.toHaveBeenCalled();
         expect(mocks.success).not.toHaveBeenCalled();
-        expect(mocks.dialog).toHaveBeenCalledWith(expect.stringContaining("invalid timezone"), "error");
+        expect(mocks.dialog).toHaveBeenCalledWith(expect.stringContaining("invalid template"), "error");
     });
 
-    it("sends reminder configuration and only closes after success", async () => {
+    it("sends channel configuration and only closes after success", async () => {
         const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ code: 1, data: { ...request, id: 1 } }) });
         vi.stubGlobal("fetch", fetch);
         const callback = vi.fn();
         const { result } = renderHook(() => useWebhookHandle());
         await act(async () => result.current.handleWebhookSave(request, callback));
-        expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ mode: "reminder", timezone: "UTC", secret: "key" });
+        expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ provider: "bark", secret: "key", titleTemplate: "{{title}}" });
         expect(callback).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
         expect(mocks.success).toHaveBeenCalledOnce();
     });
@@ -44,7 +43,7 @@ describe("notification API handling", () => {
         const callback = vi.fn();
         const { result } = renderHook(() => useWebhookHandle());
         await act(async () => result.current.handleWebhookList(callback));
-        expect(callback).toHaveBeenCalledWith([expect.objectContaining({ actions: [], mode: "note_change", timezone: "Asia/Shanghai" })]);
+        expect(callback).toHaveBeenCalledWith([expect.objectContaining({ method: "POST", headers: {}, titleTemplate: "", bodyTemplate: "" })]);
     });
 
     it("sends a test request for a saved channel", async () => {

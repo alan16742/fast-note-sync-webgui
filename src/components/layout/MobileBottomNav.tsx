@@ -1,4 +1,4 @@
-import { Library, NotepadText, Trash2, Settings, Layout, type LucideIcon } from "lucide-react";
+import { Library, NotepadText, Trash2, Settings, Layout, Zap, type LucideIcon } from "lucide-react";
 import { useAppStore, type ModuleId } from "@/stores/app-store";
 import { NavItem } from "@/components/navigation/NavItem";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,7 @@ export function MobileBottomNav({ isAdmin, className }: MobileBottomNavProps) {
       { id: "vaults", icon: Library, labelKey: "ui.nav.menuVaults" },
       { id: "notes", icon: NotepadText, labelKey: "ui.nav.menuNotes" },
       { id: "trash", icon: Trash2, labelKey: "ui.nav.menuTrash" },
+      { id: "automations", icon: Zap, labelKey: "ui.nav.menuAutomations" },
       { id: "settings", icon: Settings, labelKey: "ui.nav.menuSettings", adminOnly: true },
     ]
 

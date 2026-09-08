@@ -8,7 +8,6 @@ export interface GitSyncConfigDTO {
     branch: string
     username: string
     password?: string
-    delay: number
     retentionDays: number
     isEnabled: boolean
     lastSyncTime: string
@@ -29,7 +28,6 @@ export interface GitSyncConfigRequest {
     branch: string
     username: string
     password?: string
-    delay: number
     retentionDays: number
     isEnabled: boolean
     includeConfig: boolean

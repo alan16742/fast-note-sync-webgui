@@ -25,6 +25,7 @@ const GitAutomation = lazy(() => import("@/components/layout/git-automation").th
 const SettingManager = lazy(() => import("@/components/setting/setting-manager").then(m => ({ default: m.SettingManager })));
 const SyncLogManager = lazy(() => import("@/components/sync-log/sync-log-manager").then(m => ({ default: m.SyncLogManager })));
 const WebhookSettings = lazy(() => import("@/components/layout/webhook-settings").then(m => ({ default: m.WebhookSettings })));
+const AutomationSettings = lazy(() => import("@/components/layout/automation-settings").then(m => ({ default: m.AutomationSettings })));
 const AdminSetupDialog = lazy(() => import("@/components/user/admin-setup-dialog").then(m => ({ default: m.AdminSetupDialog })));
 
 
@@ -350,6 +351,9 @@ function App() {
 
       case "webhooks":
         return <WebhookSettings />
+
+      case "automations":
+        return <AutomationSettings />
 
 
 

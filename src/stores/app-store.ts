@@ -14,8 +14,9 @@ import { create } from 'zustand';
  * - git: Git 自动化（计划中）
  * - tokens: 令牌管理
  * - webhooks: Webhook 通知
+ * - automations: 事件自动化
  */
-export type ModuleId = 'dashboard' | 'vaults' | 'notes' | 'files' | 'trash' | 'config' | 'sync' | 'git' | 'settings' | 'sync-logs' | 'tokens' | 'webhooks';
+export type ModuleId = 'dashboard' | 'vaults' | 'notes' | 'files' | 'trash' | 'config' | 'sync' | 'git' | 'settings' | 'sync-logs' | 'tokens' | 'webhooks' | 'automations';
 
 /** Pending navigation info */
 interface PendingNavigation {

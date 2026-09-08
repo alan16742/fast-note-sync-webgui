@@ -48,14 +48,12 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
             username: config.username,
             password: config.password,
             isEnabled: config.isEnabled,
-            delay: config.delay,
             retentionDays: config.retentionDays ?? 30,
             includeConfig: config.includeConfig,
             configSyncRules: config.configSyncRules || [],
         } : {
             isEnabled: true,
             branch: "main",
-            delay: 10,
             retentionDays: 30,
             includeConfig: false,
             configSyncRules: [".obsidian/appearance.json", ".obsidian/community-plugins.json"],
@@ -175,13 +173,6 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
                         </Button>
                     </div>
                     {errors.password && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.password.message}</p>}
-                </div>
-
-                {/* 自动同步延迟 */}
-                <div className="space-y-1.5">
-                    <Label htmlFor="delay" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.git.form.delay")}</Label>
-                    <Input id="delay" type="number" className="bg-background border-input" {...register("delay", { valueAsNumber: true })} />
-                    {errors.delay && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.delay.message}</p>}
                 </div>
 
                 {/* 历史保留天数 */}

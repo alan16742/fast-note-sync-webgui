@@ -1,13 +1,9 @@
  export type BackupType = "full" | "incremental" | "sync";
-export type CronStrategy = "daily" | "weekly" | "monthly" | "custom";
-
 export interface BackupConfig {
     id?: number;
     uid?: number;
     vault: string;
     type: BackupType;
-    cronStrategy: CronStrategy;
-    cronExpression?: string;
     storageIds: string; // JSON array string, e.g., "[1, 2]"
     isEnabled: boolean;
     includeVaultName?: boolean;
@@ -15,7 +11,6 @@ export interface BackupConfig {
     passwordValue?: string;
     retentionDays?: number;
     lastRunTime?: string;
-    nextRunTime?: string;
     lastStatus?: number;
     lastMessage?: string;
     createdAt?: string;
@@ -44,8 +39,6 @@ export interface BackupConfigRequest {
     id?: number;
     vault: string;
     type: BackupType;
-    cronStrategy: CronStrategy;
-    cronExpression?: string;
     storageIds: string;
     isEnabled: boolean;
     includeVaultName?: boolean;

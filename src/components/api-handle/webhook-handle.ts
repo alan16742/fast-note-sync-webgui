@@ -20,11 +20,8 @@ export function useWebhookHandle() {
             callback((result.data || []).map((item: WebhookSubscription) => ({
                 ...item,
                 provider: item.provider === "bark" ? "bark" : item.provider === "custom" ? "custom" : "serverchan",
-                mode: item.mode || "note_change",
-                timezone: item.timezone || "Asia/Shanghai",
                 method: item.method || "POST",
                 headers: item.headers || {},
-                actions: item.actions || [],
                 titleTemplate: item.titleTemplate || "",
                 bodyTemplate: item.bodyTemplate || "",
             })));

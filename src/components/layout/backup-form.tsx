@@ -1,6 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createBackupConfigSchema, BackupFormData } from "@/lib/validations/backup-schema";
-import { BackupConfig, BackupType, CronStrategy } from "@/lib/types/backup";
+import { BackupConfig, BackupType } from "@/lib/types/backup";
 import { useBackupHandle } from "@/components/api-handle/backup-handle";
 import { useVaultHandle } from "@/components/api-handle/vault-handle";
 import { useAppStore } from "@/stores/app-store";
@@ -57,15 +57,13 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
     const defaultValues = useMemo(() => ({
         vault: config?.vault || "",
         type: config?.type,
-        cronStrategy: config?.cronStrategy || "daily",
-        cronExpression: config?.cronExpression || "0 0 * * *",
         storageIds: JSON.stringify(initialStorageIds),
         isEnabled: config?.isEnabled ?? true,
         includeVaultName: config?.includeVaultName ?? false,
         passwordMode: config?.passwordMode ?? 0,
         passwordValue: config?.passwordValue || "",
         retentionDays: config?.retentionDays ?? 30,
-    }), [config?.vault, config?.type, config?.cronStrategy, config?.cronExpression, config?.isEnabled, config?.includeVaultName, config?.passwordMode, config?.passwordValue, config?.retentionDays, initialStorageIds]);
+    }), [config?.vault, config?.type, config?.isEnabled, config?.includeVaultName, config?.passwordMode, config?.passwordValue, config?.retentionDays, initialStorageIds]);
 
     const { register, handleSubmit, formState: { errors, isDirty }, setValue, watch, reset } = useForm<BackupFormData>({
         resolver: zodResolver(schema),
@@ -77,7 +75,6 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
     }, [isDirty, setDirty])
 
     const selectedVault = watch("vault");
-    const cronStrategy = watch("cronStrategy");
 
     useEffect(() => {
         setSelectedStorageIds(initialStorageIds);
@@ -185,42 +182,6 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
                             </Tooltip>
                         </div>
                     </div>
-                )}
-
-                {/* 仅在全量或增量备份时显示的配置项 */}
-                {(watch("type") === "full" || watch("type") === "incremental") && (
-                    <>
-                        {/* 定时策略 */}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.backup.cronStrategy")}</Label>
-                            <Select
-                                onValueChange={(value) => setValue("cronStrategy", value as CronStrategy)}
-                                value={cronStrategy || "daily"}>
-                                <SelectTrigger className="bg-background border-input">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="daily">{t("ui.backup.strategy.daily")}</SelectItem>
-                                    <SelectItem value="weekly">{t("ui.backup.strategy.weekly")}</SelectItem>
-                                    <SelectItem value="monthly">{t("ui.backup.strategy.monthly")}</SelectItem>
-                                    <SelectItem value="custom">{t("ui.backup.strategy.custom")}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {errors.cronStrategy && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.cronStrategy.message}</p>}
-                        </div>
-
-                        {/* Cron 表达式 */}
-                        <div className={cn("space-y-1.5", cronStrategy !== "custom" && "opacity-50 pointer-events-none")}>
-                            <Label className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.backup.cronExpression")}</Label>
-                            <Input
-                                {...register("cronExpression")}
-                                placeholder="0 0 * * *"
-                                className="bg-background border-input"
-                                disabled={cronStrategy !== "custom"}
-                            />
-                            {errors.cronExpression && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.cronExpression.message}</p>}
-                        </div>
-                    </>
                 )}
 
                 {/* 仅在全量或增量备份时显示的密码配置项 */}

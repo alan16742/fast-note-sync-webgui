@@ -11,7 +11,6 @@ export const createGitSyncSchema = (t: (key: string) => string) => z.object({
     branch: z.string().min(1, t("ui.validation.git.branchRequired")),
     username: z.string().optional(),
     password: z.string().optional(),
-    delay: z.number().min(0, t("ui.validation.git.delayMin")),
     retentionDays: z.number().min(-1, t("ui.validation.git.retentionDaysMin")).default(0),
     isEnabled: z.boolean().default(true),
     includeConfig: z.boolean().default(false),
