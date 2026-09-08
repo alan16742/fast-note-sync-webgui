@@ -1,4 +1,4 @@
-import { Library, NotepadText, ArchiveX, Settings, DatabaseBackup, GitPullRequestArrow, Layers, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, FileJson, Logs } from "lucide-react";
+import { Library, NotepadText, ArchiveX, Settings, DatabaseBackup, GitPullRequestArrow, Layers, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, FileJson, Logs, Webhook } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import { useAppStore, type ModuleId } from "@/stores/app-store";
 import { NavItem } from "@/components/navigation/NavItem";
@@ -87,6 +87,7 @@ export function FloatingNav({ isAdmin, className }: FloatingNavProps) {
       { id: "sync-logs", icon: Logs, labelKey: "ui.nav.menuSyncLogs" },
       { id: "sync", icon: DatabaseBackup, labelKey: "ui.nav.menuSync" },
       { id: "git", icon: GitPullRequestArrow, labelKey: "ui.nav.menuGit" },
+      { id: "webhooks", icon: Webhook, labelKey: "ui.nav.menuWebhooks" },
     ]
 
   const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin)

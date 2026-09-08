@@ -13,8 +13,9 @@ import { create } from 'zustand';
  * - sync: 远端备份（计划中）
  * - git: Git 自动化（计划中）
  * - tokens: 令牌管理
+ * - webhooks: Webhook 通知
  */
-export type ModuleId = 'dashboard' | 'vaults' | 'notes' | 'files' | 'trash' | 'config' | 'sync' | 'git' | 'settings' | 'sync-logs' | 'tokens';
+export type ModuleId = 'dashboard' | 'vaults' | 'notes' | 'files' | 'trash' | 'config' | 'sync' | 'git' | 'settings' | 'sync-logs' | 'tokens' | 'webhooks';
 
 /** Pending navigation info */
 interface PendingNavigation {
