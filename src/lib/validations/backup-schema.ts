@@ -2,10 +2,6 @@ import * as z from "zod";
 
 
 export const createBackupConfigSchema = (t: (key: string) => string) => z.object({
-    vault: z.string().min(1, t("ui.backup.validation.vaultRequired")),
-    type: z.enum(["full", "incremental", "sync"], {
-        required_error: t("ui.backup.validation.typeRequired"),
-    }),
     storageIds: z.string().refine((val) => {
         try {
             const arr = JSON.parse(val);
@@ -14,9 +10,9 @@ export const createBackupConfigSchema = (t: (key: string) => string) => z.object
             return false;
         }
     }, t("ui.backup.validation.storageRequired")),
-    isEnabled: z.boolean().default(true),
-    includeVaultName: z.boolean().default(false),
-    passwordMode: z.number().int().min(0).max(2).default(0),
+    type: z.enum(["full", "incremental", "sync"]).default("full"),
+    includeVaultName: z.boolean().optional(),
+    passwordMode: z.number().int().min(0).max(2).optional(),
     passwordValue: z.string().optional(),
     retentionDays: z.number().int().min(-1, t("ui.backup.validation.retentionDaysMin")).optional(),
 });

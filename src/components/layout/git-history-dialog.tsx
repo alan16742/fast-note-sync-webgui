@@ -100,6 +100,8 @@ export function GitHistoryDialog({ configId, open, onOpenChange }: GitHistoryDia
                                 {configId === undefined && (
                                     <TableHead className="w-16">{t("ui.git.history.configId")}</TableHead>
                                 )}
+                                <TableHead className="w-24">{t("ui.git.history.trigger")}</TableHead>
+                                <TableHead className="w-24">{t("ui.git.history.vault")}</TableHead>
                                 <TableHead className="w-40">{t("ui.git.history.startTime")}</TableHead>
                                 <TableHead className="w-24">{t("ui.git.history.duration")}</TableHead>
                                 <TableHead className="w-24">{t("ui.git.history.status")}</TableHead>
@@ -109,7 +111,7 @@ export function GitHistoryDialog({ configId, open, onOpenChange }: GitHistoryDia
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={configId === undefined ? 6 : 5} className="h-48">
+                                    <TableCell colSpan={configId === undefined ? 8 : 7} className="h-48">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
                                             <Loader2 className="h-8 w-8 animate-spin opacity-50" />
                                             <span className="text-xs">{t("ui.common.loading")}</span>
@@ -123,6 +125,8 @@ export function GitHistoryDialog({ configId, open, onOpenChange }: GitHistoryDia
                                         {configId === undefined && (
                                             <TableCell className="font-mono text-muted-foreground">#{item.configId}</TableCell>
                                         )}
+                                        <TableCell className="font-mono text-muted-foreground">#{item.triggerId || "-"}</TableCell>
+                                        <TableCell className="font-mono text-muted-foreground">#{item.vaultId || "-"}</TableCell>
                                         <TableCell className="font-mono text-muted-foreground">{item.startTime || "-"}</TableCell>
                                         <TableCell className="font-mono text-muted-foreground">{calcDuration(item.startTime, item.endTime)}</TableCell>
                                         <TableCell>
@@ -144,7 +148,7 @@ export function GitHistoryDialog({ configId, open, onOpenChange }: GitHistoryDia
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={configId === undefined ? 6 : 5} className="h-48 text-center text-muted-foreground">
+                                    <TableCell colSpan={configId === undefined ? 8 : 7} className="h-48 text-center text-muted-foreground">
                                         {t("ui.git.history.noData")}
                                     </TableCell>
                                 </TableRow>

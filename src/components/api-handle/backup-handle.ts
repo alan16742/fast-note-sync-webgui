@@ -94,32 +94,6 @@ export function useBackupHandle() {
     }, [token, openConfirmDialog, t])
 
     /**
-     * 手动触发备份执行
-     */
-    const handleBackupExecute = useCallback(async (id: number) => {
-        try {
-            const response = await fetch(addCacheBuster(env.API_URL + "/api/backup/execute"), {
-                method: "POST",
-                body: JSON.stringify({ id }),
-                headers: buildApiHeaders({ token }),
-            })
-
-            if (!response.ok) {
-                throw new Error("Network response was not ok")
-            }
-
-            const res = await response.json()
-            if (res.code < 100 && res.code > 0) {
-                toast.success(res.message || t("api.backup.execute.success"))
-            } else {
-                openConfirmDialog(res.message + ": " + res.details, "error")
-            }
-        } catch (error) {
-            openConfirmDialog(t("api.backup.execute.error") + ": " + error, "error")
-        }
-    }, [token, openConfirmDialog, t])
-
-    /**
      * 获取备份历史记录
      */
     const handleBackupHistory = useCallback(async (page: number, pageSize: number, configId: number, callback?: (data: { list: BackupHistory[], total: number }) => void) => {
@@ -161,13 +135,11 @@ export function useBackupHandle() {
         handleBackupConfigList,
         handleBackupConfigDelete,
         handleBackupConfigUpdate,
-        handleBackupExecute,
         handleBackupHistory,
     }), [
         handleBackupConfigList,
         handleBackupConfigDelete,
         handleBackupConfigUpdate,
-        handleBackupExecute,
         handleBackupHistory,
     ])
 }

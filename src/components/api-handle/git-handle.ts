@@ -103,34 +103,6 @@ export function useGitHandle() {
     }, [getHeaders, t]);
 
     /**
-     * 触发 Git 同步执行
-     */
-    const handleGitSyncExecute = useCallback(async (id: number, callback: () => void) => {
-        try {
-            const response = await fetch(addCacheBuster(`${env.API_URL}/api/git-sync/config/execute`), {
-                method: "POST",
-                headers: getHeaders(),
-                body: JSON.stringify({ id }),
-            });
-
-            if (!response.ok) {
-                throw new Error(t("api.git.execute.error"));
-            }
-
-            const res = await response.json();
-            if (res.code > 0 && res.code <= 200) {
-                toast.success(res.message || t("api.git.execute.success"));
-                callback();
-            } else {
-                toast.error(res.message || t("api.git.execute.error"));
-            }
-        } catch (error) {
-            console.error("GitSyncExecute error:", error);
-            toast.error(error instanceof Error ? error.message : t("api.git.execute.error"));
-        }
-    }, [getHeaders, t]);
-
-    /**
      * 清理 Git 工作区
      */
     const handleGitSyncClean = useCallback(async (id: number, callback: () => void) => {
@@ -236,7 +208,6 @@ export function useGitHandle() {
         handleGitSyncList,
         handleGitSyncUpdate,
         handleGitSyncDelete,
-        handleGitSyncExecute,
         handleGitSyncClean,
         handleGitSyncHistories,
         handleGitSyncValidate,
@@ -244,7 +215,6 @@ export function useGitHandle() {
         handleGitSyncList,
         handleGitSyncUpdate,
         handleGitSyncDelete,
-        handleGitSyncExecute,
         handleGitSyncClean,
         handleGitSyncHistories,
         handleGitSyncValidate,

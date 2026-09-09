@@ -3,13 +3,11 @@
  */
 export interface GitSyncConfigDTO {
     id: number
-    vault: string
     repoUrl: string
     branch: string
     username: string
     password?: string
     retentionDays: number
-    isEnabled: boolean
     lastSyncTime: string
     lastStatus: number // 0: Idle, 1: Running, 2: Success, 3: Failed, 4: Shutdown
     lastMessage: string
@@ -23,13 +21,11 @@ export interface GitSyncConfigDTO {
  */
 export interface GitSyncConfigRequest {
     id?: number
-    vault: string
     repoUrl: string
     branch: string
     username: string
     password?: string
     retentionDays: number
-    isEnabled: boolean
     includeConfig: boolean
     configSyncRules: string[]
 }
@@ -50,6 +46,8 @@ export interface GitSyncValidateRequest {
 export interface GitSyncHistoryDTO {
     id: number
     configId: number
+    triggerId: number
+    vaultId: number
     startTime: string
     endTime: string
     status: number // 0: Idle, 1: Running, 2: Success, 3: Failed, 4: Shutdown

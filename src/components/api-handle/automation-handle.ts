@@ -42,6 +42,9 @@ export function useAutomationHandle() {
         }, "api.automation.save.error");
         if (result) {
             toast.success(result.message || t("api.automation.save.success"));
+            if (result.data?.warnings?.length) {
+                openConfirmDialog(result.data.warnings.join("\n"), "warning");
+            }
             callback(result.data);
         }
     }, [request, t]);
@@ -56,10 +59,10 @@ export function useAutomationHandle() {
         });
     }, [openConfirmDialog, request, t]);
 
-    const handleAutomationTrigger = useCallback(async (id: number, vaultId = 0) => {
+    const handleAutomationTrigger = useCallback(async (id: number) => {
         const result = await request("/api/automations/trigger", {
             method: "POST",
-            body: JSON.stringify({ id, vaultId }),
+            body: JSON.stringify({ id }),
         }, "api.automation.trigger.error");
         if (result) toast.success(result.message || t("api.automation.trigger.success"));
     }, [request, t]);

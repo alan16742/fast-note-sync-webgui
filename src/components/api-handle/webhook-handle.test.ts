@@ -9,7 +9,7 @@ vi.mock("@/components/common/Toast", () => ({ toast: { success: mocks.success } 
 vi.mock("react-i18next", async (importOriginal) => ({ ...await importOriginal<typeof import("react-i18next")>(), useTranslation: () => ({ t: mocks.t }) }));
 
 const request: WebhookSubscriptionRequest = {
-    provider: "bark", enabled: true, url: "", method: "POST", headers: {}, secret: "key",
+    provider: "bark", url: "", method: "POST", headers: {}, secret: "key",
     titleTemplate: "{{title}}", bodyTemplate: "{{content}}",
 };
 

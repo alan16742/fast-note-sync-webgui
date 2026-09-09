@@ -1,14 +1,12 @@
-import { GitBranch, GitPullRequestArrow, History, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, ShieldCheck, Pencil, Trash2, Play, Eraser, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { GitBranch, GitPullRequestArrow, History, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, ShieldCheck, Pencil, Trash2, Eraser, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useConfirmDialog } from "@/components/context/confirm-dialog-context";
 import { GitHistoryDialog } from "@/components/layout/git-history-dialog";
-import { useVaultHandle } from "@/components/api-handle/vault-handle";
 import { GitSyncConfigDTO, GitSyncHistoryDTO } from "@/lib/types/git";
 import { GitConfigForm } from "@/components/layout/git-config-form";
 import { useGitHandle } from "@/components/api-handle/git-handle";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { VaultType } from "@/lib/types/vault";
 import { cn } from "@/lib/utils";
 
 
@@ -18,11 +16,9 @@ import { cn } from "@/lib/utils";
 export function GitAutomation() {
     const { t } = useTranslation();
     const { openConfirmDialog } = useConfirmDialog();
-    const { handleGitSyncList, handleGitSyncDelete, handleGitSyncExecute, handleGitSyncClean, handleGitSyncHistories } = useGitHandle();
-    const { handleVaultList } = useVaultHandle();
+    const { handleGitSyncList, handleGitSyncDelete, handleGitSyncClean, handleGitSyncHistories } = useGitHandle();
 
     const [configs, setConfigs] = useState<GitSyncConfigDTO[]>([]);
-    const [vaults, setVaults] = useState<VaultType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -48,24 +44,14 @@ export function GitAutomation() {
         }
     }, [handleGitSyncList]);
 
-    const loadVaults = useCallback(async () => {
-        try {
-            await handleVaultList((data) => {
-                setVaults(data);
-            });
-        } catch (error) {
-            console.error("Vault list load error:", error);
-        }
-    }, [handleVaultList]);
-
     const reloadData = useCallback(async () => {
         setIsLoading(true);
         try {
-            await Promise.all([loadConfigs(), loadVaults()]);
+            await loadConfigs();
         } finally {
             setIsLoading(false);
         }
-    }, [loadConfigs, loadVaults]);
+    }, [loadConfigs]);
 
     const loadGlobalHistory = useCallback(async (page: number) => {
         setIsHistoryLoading(true);
@@ -88,15 +74,6 @@ export function GitAutomation() {
         });
     };
 
-    const handleExecute = async (id: number) => {
-        await handleGitSyncExecute(id, () => {
-            setTimeout(() => {
-                reloadData();
-                loadGlobalHistory(1);
-            }, 1000);
-        });
-    };
-
     const handleClean = (id: number) => {
         openConfirmDialog(t("ui.git.clean.confirm"), "confirm", async () => {
             await handleGitSyncClean(id, reloadData);
@@ -109,11 +86,6 @@ export function GitAutomation() {
     };
 
     const globalTotalPages = globalHistoryTotal > 0 ? Math.ceil(globalHistoryTotal / globalHistoryPageSize) : 1;
-
-    // 通过 configId 查找对应的笔记仓库名称
-    const getVaultName = (configId: number): string => {
-        return configs.find(c => c.id === configId)?.vault ?? `#${configId}`;
-    };
 
     /** 计算提交耗时，返回格式如 "3s" "1m 23s" "-" */
     const calcDuration = (start: string, end: string): string => {
@@ -174,7 +146,6 @@ export function GitAutomation() {
                                 <h3 className="text-base font-bold text-foreground">{t("ui.git.addConfig")}</h3>
                             </div>
                             <GitConfigForm
-                                vaults={vaults}
                                 onSubmit={() => { setIsAdding(false); reloadData(); }}
                                 onCancel={() => setIsAdding(false)}
                             />
@@ -188,7 +159,6 @@ export function GitAutomation() {
                                 <h3 className="text-base font-bold text-foreground">{t("ui.git.editConfig")}</h3>
                             </div>
                             <GitConfigForm
-                                vaults={vaults}
                                 config={configs.find(c => c.id === editingId)}
                                 onSubmit={() => { setEditingId(null); reloadData(); }}
                                 onCancel={() => setEditingId(null)}
@@ -208,18 +178,16 @@ export function GitAutomation() {
                                     key={config.id}
                                     className={cn(
                                         "group flex flex-col p-4 transition-all duration-200 border rounded-xl bg-background hover:bg-accent/30",
-                                        config.isEnabled
-                                            ? "border-l-4 border-l-orange-500 shadow-sm"
-                                            : "border-l-4 border-l-muted border-y-border border-r-border"
+                                        "border-l-4 border-l-orange-500 shadow-sm"
                                     )}
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <ShieldCheck className={cn("h-5 w-5 shrink-0", config.isEnabled ? "text-orange-500" : "text-muted-foreground")} />
+                                            <ShieldCheck className="h-5 w-5 shrink-0 text-orange-500" />
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-[12px] px-1.5 py-0.5 bg-muted rounded font-mono text-muted-foreground">#{config.id}</span>
-                                                    <span className="font-bold">{config.vault}</span>
+                                                    <span className="font-bold">{t("ui.git.repository")}</span>
                                                     <span className="text-[12px] px-1.5 py-0.5 bg-accent rounded font-mono text-muted-foreground">
                                                         {config.branch}
                                                     </span>
@@ -239,15 +207,6 @@ export function GitAutomation() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 flex-wrap shrink-0">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-muted-foreground hover:text-green-600 rounded-lg"
-                                                onClick={() => handleExecute(config.id)}
-                                                title={t("ui.git.execute.title")}
-                                            >
-                                                <Play className="h-4 w-4" />
-                                            </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -379,8 +338,8 @@ export function GitAutomation() {
                                                 )}
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-mono text-muted-foreground text-xs">#{item.configId}</span>
-                                                        <span className="font-medium text-foreground/80">{getVaultName(item.configId)}</span>
+                                                        <span className="font-mono text-muted-foreground text-xs">Trigger #{item.triggerId}</span>
+                                                        <span className="font-medium text-foreground/80">Vault #{item.vaultId}</span>
                                                         <span className={cn(
                                                             "font-medium",
                                                             item.status === 2 && "text-green-600 dark:text-green-400",

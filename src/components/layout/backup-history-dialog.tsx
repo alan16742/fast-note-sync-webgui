@@ -131,6 +131,8 @@ export function BackupHistoryDialog({ configId, configType, open, onOpenChange }
                         <TableHeader className="bg-muted/50 sticky top-0 z-10">
                             <TableRow>
                                 <TableHead className="w-[180px]">{t("ui.backup.history.startTime")}</TableHead>
+                                <TableHead>{t("ui.backup.history.trigger")}</TableHead>
+                                <TableHead>{t("ui.backup.history.vault")}</TableHead>
                                 <TableHead>{t("ui.backup.history.storage")}</TableHead>
                                 <TableHead>{t("ui.backup.history.status")}</TableHead>
                                 <TableHead>
@@ -146,7 +148,7 @@ export function BackupHistoryDialog({ configId, configType, open, onOpenChange }
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-48">
+                                    <TableCell colSpan={9} className="h-48">
                                         <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
                                             <Loader2 className="h-8 w-8 animate-spin opacity-50" />
                                             <span className="text-xs">{t("ui.common.loading")}</span>
@@ -157,6 +159,8 @@ export function BackupHistoryDialog({ configId, configType, open, onOpenChange }
                                 history.map((item) => (
                                     <TableRow key={item.id} className="text-xs hover:bg-muted/30 transition-colors">
                                         <TableCell className="font-mono text-muted-foreground">{item.startTime}</TableCell>
+                                        <TableCell className="font-mono text-muted-foreground">#{item.triggerId || "-"}</TableCell>
+                                        <TableCell className="font-mono text-muted-foreground">#{item.vaultId || "-"}</TableCell>
                                         <TableCell>
                                             {getStorageType(item.storageId) !== "-"
                                                 ? `#${item.storageId} ${t(`ui.storage.storageType.${getStorageType(item.storageId)}`)}`
@@ -294,7 +298,7 @@ export function BackupHistoryDialog({ configId, configType, open, onOpenChange }
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">
+                                    <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
                                         {t("ui.backup.history.noData")}
                                     </TableCell>
                                 </TableRow>

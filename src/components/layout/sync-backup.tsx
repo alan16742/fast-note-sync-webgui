@@ -1,4 +1,4 @@
-import { Plus, Pencil, Trash2, Check, Cloud, HardDrive, Share2, Server, DatabaseBackup, Play, ShieldCheck, Clock, RefreshCw, History as HistoryIcon, CheckCircle2, AlertCircle, XCircle, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, Cloud, HardDrive, Share2, Server, DatabaseBackup, ShieldCheck, Clock, RefreshCw, History as HistoryIcon, CheckCircle2, AlertCircle, XCircle, Loader2 } from "lucide-react";
 import { BackupHistoryDialog } from "@/components/layout/backup-history-dialog";
 import { useConfirmDialog } from "@/components/context/confirm-dialog-context";
 import { useStorageHandle } from "@/components/api-handle/storage-handle";
@@ -38,7 +38,7 @@ export function SyncBackup() {
     const [isShowHistory, setIsShowHistory] = useState(false)
 
     const { handleStorageList, handleStorageDelete, handleStorageTypes } = useStorageHandle()
-    const { handleBackupConfigList, handleBackupConfigDelete, handleBackupExecute } = useBackupHandle()
+    const { handleBackupConfigList, handleBackupConfigDelete } = useBackupHandle()
 
     useEffect(() => {
         reloadAll();
@@ -85,11 +85,6 @@ export function SyncBackup() {
             await handleBackupConfigDelete(id)
             await reloadAll()
         })
-    }
-
-    const handleExecuteBackup = async (id: number) => {
-        await handleBackupExecute(id)
-        setTimeout(() => handleBackupConfigList(setBackupConfigs), 1000)
     }
 
     return (
@@ -151,19 +146,14 @@ export function SyncBackup() {
                                     key={config.id}
                                     className={cn(
                                         "group relative flex flex-col p-3 transition-all duration-200 hover:shadow-sm border rounded-lg bg-background hover:bg-accent/50",
-                                        config.isEnabled
-                                            ? "border-l-4 border-l-blue-600 dark:border-l-blue-500 shadow-sm"
-                                            : "border-l-4 border-l-muted border-y-border border-r-border"
+                                        "border-l-4 border-l-blue-600 dark:border-l-blue-500 shadow-sm"
                                     )}
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
-                                            <ShieldCheck className={cn("h-4 w-4", config.isEnabled ? "text-blue-500" : "text-muted-foreground")} />
+                                            <ShieldCheck className="h-4 w-4 text-blue-500" />
                                             <span className="text-sm tabular-nums text-muted-foreground font-mono font-bold">#{config.id}</span>
-                                            <span className="font-bold text-sm">{config.vault}</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-accent rounded text-accent-foreground uppercase">
-                                                {t(`ui.backup.backupType.${config.type}`)}
-                                            </span>
+                                            <span className="font-bold text-sm">{t("ui.backup.target")}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <Button
@@ -178,15 +168,6 @@ export function SyncBackup() {
                                                 title={t("ui.backup.history.title")}
                                             >
                                                 <HistoryIcon className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-muted-foreground hover:text-blue-600 rounded-md"
-                                                onClick={() => handleExecuteBackup(config.id!)}
-                                                title={t("ui.backup.executeNow")}
-                                            >
-                                                <Play className="h-3 w-3" />
                                             </Button>
                                             <Button
                                                 variant="ghost"

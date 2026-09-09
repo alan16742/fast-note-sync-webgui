@@ -1,4 +1,3 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { GitSyncConfigRequest, GitSyncConfigDTO } from "@/lib/types/git";
 import { createGitSyncSchema } from "@/lib/validations/git-sync-schema";
 import { useGitHandle } from "@/components/api-handle/git-handle";
@@ -9,7 +8,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { VaultType } from "@/lib/types/vault";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -18,8 +16,6 @@ import { useForm, useFieldArray } from "react-hook-form";
 interface GitConfigFormProps {
     /** 现有配置(编辑模式) */
     config?: GitSyncConfigDTO
-    /** 笔记本列表 */
-    vaults: VaultType[]
     /** 提交成功回调 */
     onSubmit: () => void
     /** 取消回调 */
@@ -29,7 +25,7 @@ interface GitConfigFormProps {
 /**
  * Git 仓库配置表单组件
  */
-export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigFormProps) {
+export function GitConfigForm({ config, onSubmit, onCancel }: GitConfigFormProps) {
     const { t } = useTranslation()
     const { handleGitSyncUpdate, handleGitSyncValidate } = useGitHandle()
     const setDirty = useAppStore(state => state.setDirty)
@@ -42,17 +38,14 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
     const defaultValues = useMemo(() => (
         config ? {
             id: config.id,
-            vault: config.vault,
             repoUrl: config.repoUrl,
             branch: config.branch,
             username: config.username,
             password: config.password,
-            isEnabled: config.isEnabled,
             retentionDays: config.retentionDays ?? 30,
             includeConfig: config.includeConfig,
             configSyncRules: config.configSyncRules || [],
         } : {
-            isEnabled: true,
             branch: "main",
             retentionDays: 30,
             includeConfig: false,
@@ -74,8 +67,6 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
         name: "configSyncRules" as never
     })
 
-    const selectedVault = watch("vault")
-    const isEnabled = watch("isEnabled")
     const includeConfig = watch("includeConfig")
 
     useEffect(() => {
@@ -110,27 +101,6 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
     return (
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                {/* 关联笔记本 */}
-                <div className="space-y-1.5">
-                    <Label htmlFor="vault" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.backup.vault")}</Label>
-                    <Select
-                        name="vault"
-                        onValueChange={(value) => setValue("vault", value)}
-                        value={selectedVault || undefined}>
-                        <SelectTrigger id="vault" className="bg-background border-input focus:ring-primary/20">
-                            <SelectValue placeholder={t("ui.backup.selectVault")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {vaults.map((v) => (
-                                <SelectItem value={v.vault} key={v.id}>
-                                    {v.vault}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {errors.vault && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.vault.message}</p>}
-                </div>
-
                 {/* 分支名称 */}
                 <div className="space-y-1.5">
                     <Label htmlFor="branch" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.git.form.branch")}</Label>
@@ -253,19 +223,7 @@ export function GitConfigForm({ config, vaults, onSubmit, onCancel }: GitConfigF
                 )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-border">
-                {/* 是否启用 */}
-                <div className="flex items-center space-x-2 whitespace-nowrap shrink-0">
-                    <Checkbox
-                        id="isEnabled"
-                        name="isEnabled"
-                        checked={Boolean(isEnabled)}
-                        onCheckedChange={(checked) => setValue("isEnabled", Boolean(checked))}
-                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                    <Label htmlFor="isEnabled" className="text-sm font-medium text-foreground">{t("ui.common.isEnabled")}</Label>
-                </div>
-
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 pt-3 border-t border-border">
                 <div className="flex items-center gap-3 flex-wrap justify-end">
                     {onCancel && (
                         <Button type="button" variant="ghost" onClick={handleCancel} disabled={isSubmitting || isValidating}>

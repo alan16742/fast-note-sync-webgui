@@ -6,13 +6,11 @@ import { z } from "zod";
  */
 export const createGitSyncSchema = (t: (key: string) => string) => z.object({
     id: z.number().optional(),
-    vault: z.string().min(1, t("ui.validation.git.vaultRequired")),
     repoUrl: z.string().min(1, t("ui.validation.git.repoUrlRequired")).url(t("ui.validation.git.repoUrlInvalid")),
     branch: z.string().min(1, t("ui.validation.git.branchRequired")),
     username: z.string().optional(),
     password: z.string().optional(),
     retentionDays: z.number().min(-1, t("ui.validation.git.retentionDaysMin")).default(0),
-    isEnabled: z.boolean().default(true),
     includeConfig: z.boolean().default(false),
     configSyncRules: z.array(z.string()).default([]),
 }).superRefine((data, ctx) => {

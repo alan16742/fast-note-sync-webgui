@@ -43,7 +43,10 @@ export function StorageForm({ config, types, onSubmit, onCancel }: StorageFormPr
 
     const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, setValue, getValues } = useForm<StorageConfig>({
         resolver: zodResolver(schema),
-        defaultValues: config || { isEnabled: true },
+        defaultValues: {
+            isEnabled: true,
+            ...config,
+        },
     })
 
     useEffect(() => {
@@ -255,6 +258,7 @@ export function StorageForm({ config, types, onSubmit, onCancel }: StorageFormPr
                     <p className="text-[11px] text-muted-foreground ml-1" dangerouslySetInnerHTML={{ __html: t("ui.storage.help.accessUrlPrefix") }} />
                     {errors.accessUrlPrefix && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.accessUrlPrefix.message}</p>}
                 </div>
+
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-border">

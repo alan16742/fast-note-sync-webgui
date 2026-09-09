@@ -3,7 +3,6 @@ export type WebhookProvider = "serverchan" | "bark" | "custom";
 export interface WebhookSubscription {
     id: number;
     uid: number;
-    enabled: boolean;
     provider: WebhookProvider;
     url: string;
     method: string;
@@ -17,7 +16,6 @@ export interface WebhookSubscription {
 
 export interface WebhookSubscriptionRequest {
     id?: number;
-    enabled: boolean;
     provider: WebhookProvider;
     url: string;
     method: string;

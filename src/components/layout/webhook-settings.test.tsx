@@ -33,7 +33,7 @@ describe("notification settings", () => {
 
     it("requires a replacement key when an existing channel changes provider", () => {
         mocks.list.mockImplementation((callback: (items: unknown[]) => void) => callback([{
-            id: 1, provider: "serverchan", enabled: true,
+            id: 1, provider: "serverchan",
             hasSecret: true, url: "", titleTemplate: "", bodyTemplate: "",
         }]));
         render(<WebhookSettings />);
@@ -51,9 +51,18 @@ describe("notification settings", () => {
         chooseProvider("ui.webhook.providerCustom");
         expect(screen.getByLabelText("ui.webhook.customEndpoint")).toBeRequired();
         expect(screen.getByLabelText("ui.webhook.method")).toHaveTextContent("ui.webhook.methodPost");
-        fireEvent.change(screen.getByLabelText("ui.webhook.headers"), { target: { value: "Authorization: Bearer token" } });
+        fireEvent.change(screen.getByLabelText("ui.webhook.headers"), { target: { value: "Authorization: Bearer token\nX-Source: fast-note-sync" } });
         expect(mocks.test).not.toHaveBeenCalled();
         fireEvent.click(screen.getByText("ui.webhook.test"));
-        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "custom", method: "POST", headers: { Authorization: "Bearer token" } }));
+        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "custom", method: "POST", headers: { Authorization: "Bearer token", "X-Source": "fast-note-sync" } }));
+    });
+
+    it("treats a pasted backslash-n as header text instead of a line break", () => {
+        render(<WebhookSettings />);
+        fireEvent.click(screen.getByTitle("ui.webhook.add"));
+        chooseProvider("ui.webhook.providerCustom");
+        fireEvent.change(screen.getByLabelText("ui.webhook.headers"), { target: { value: "X-Test: one\\nX-Other: two" } });
+        fireEvent.click(screen.getByText("ui.webhook.test"));
+        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ headers: { "X-Test": "one\\nX-Other: two" } }));
     });
 });

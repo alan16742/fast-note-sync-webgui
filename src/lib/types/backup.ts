@@ -2,12 +2,10 @@
 export interface BackupConfig {
     id?: number;
     uid?: number;
-    vault: string;
-    type: BackupType;
+    type?: BackupType;
     storageIds: string; // JSON array string, e.g., "[1, 2]"
-    isEnabled: boolean;
     includeVaultName?: boolean;
-    passwordMode: number;
+    passwordMode?: number;
     passwordValue?: string;
     retentionDays?: number;
     lastRunTime?: string;
@@ -21,6 +19,8 @@ export interface BackupHistory {
     id: number;
     configId: number;
     uid: number;
+    triggerId: number;
+    vaultId: number;
     storageId: number;
     type: BackupType;
     status: number;
@@ -37,12 +37,10 @@ export interface BackupHistory {
 
 export interface BackupConfigRequest {
     id?: number;
-    vault: string;
-    type: BackupType;
+    type?: BackupType;
     storageIds: string;
-    isEnabled: boolean;
     includeVaultName?: boolean;
-    passwordMode: number;
+    passwordMode?: number;
     passwordValue?: string;
     retentionDays?: number;
 }
