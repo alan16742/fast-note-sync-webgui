@@ -44,7 +44,3 @@ export interface BackupConfigRequest {
     passwordValue?: string;
     retentionDays?: number;
 }
-
-export interface BackupExecuteRequest {
-    id: number;
-}

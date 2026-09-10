@@ -915,6 +915,7 @@ export default {
     "ui.automation.pathGlobHelp": "使用 Glob 匹配路径，例如 notes/*.md；与前缀同时填写时两者都要满足。",
     "ui.automation.eventActions": "匹配行为",
     "ui.automation.eventActionsHelp": "请选择要触发的行为；不选择不会匹配任何行为。",
+    "ui.automation.eventActionsPlaceholder": "选择行为",
     "ui.automation.eventActionsRequired": "请至少选择一个匹配行为。",
     "ui.automation.action.create": "创建",
     "ui.automation.action.modify": "修改",

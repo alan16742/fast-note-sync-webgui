@@ -101,13 +101,6 @@ export function GitConfigForm({ config, onSubmit, onCancel }: GitConfigFormProps
     return (
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                {/* 分支名称 */}
-                <div className="space-y-1.5">
-                    <Label htmlFor="branch" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.git.form.branch")}</Label>
-                    <Input id="branch" autoComplete="off" className="bg-background border-input" {...register("branch")} />
-                    {errors.branch && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.branch.message}</p>}
-                </div>
-
                 {/* 仓库协议地址 */}
                 <div className="md:col-span-2 space-y-1.5">
                     <Label htmlFor="repoUrl" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.git.repoUrl")}</Label>
@@ -143,6 +136,13 @@ export function GitConfigForm({ config, onSubmit, onCancel }: GitConfigFormProps
                         </Button>
                     </div>
                     {errors.password && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.password.message}</p>}
+                </div>
+
+                {/* 分支名称 */}
+                <div className="space-y-1.5">
+                    <Label htmlFor="branch" className="text-xs font-semibold text-muted-foreground ml-1">{t("ui.git.form.branch")}</Label>
+                    <Input id="branch" autoComplete="off" className="bg-background border-input" {...register("branch")} />
+                    {errors.branch && <p className="text-[11px] text-destructive mt-1 ml-1">{errors.branch.message}</p>}
                 </div>
 
                 {/* 历史保留天数 */}

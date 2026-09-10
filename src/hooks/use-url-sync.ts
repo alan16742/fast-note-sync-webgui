@@ -58,6 +58,7 @@ export function useUrlSync(
             else if (params.has('settings')) module = 'settings';
             else if (params.has('sync-logs')) module = 'sync-logs';
             else if (params.has('automations')) module = 'automations';
+            else if (params.has('webhooks')) module = 'webhooks';
 
             // 更新 module
             if (currentModuleRef.current !== module || (module === 'trash' && type)) {

@@ -148,11 +148,9 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
                 </div>
             </>}
         </div>
-        <div className="flex items-center justify-between pt-3 border-t border-border">
-            <div className="flex gap-3">
-                {onCancel && <Button type="button" variant="ghost" onClick={handleCancel}>{t("ui.common.cancel")}</Button>}
-                <Button type="submit">{config ? t("ui.common.save") : t("ui.common.add")}</Button>
-            </div>
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+            {onCancel && <Button type="button" variant="ghost" onClick={handleCancel}>{t("ui.common.cancel")}</Button>}
+            <Button type="submit">{config ? t("ui.common.save") : t("ui.common.add")}</Button>
         </div>
     </form>;
 }

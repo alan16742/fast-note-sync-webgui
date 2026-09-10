@@ -6,6 +6,7 @@ export interface SyncLogItem {
     changedFields: string;
     path: string;
     pathHash: string;
+    oldPath?: string;
     size: number;
     clientName: string;
     clientType?: string;

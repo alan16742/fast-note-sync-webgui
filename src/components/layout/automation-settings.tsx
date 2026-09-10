@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, Play, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
+import { ChevronDown, Pencil, Play, Plus, RefreshCw, Trash2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const EVENT_ACTIONS = ["create", "modify", "delete", "rename", "restore", "permanent_delete"];
@@ -31,6 +32,34 @@ const emptyTrigger = (): AutomationTriggerRequest => ({
     name: "", enabled: true, vaultId: 0, timezone: "Asia/Shanghai", matchMode: "any",
     events: [emptyRule()], actions: [],
 });
+
+/** 匹配行为下拉多选（保持菜单打开以便连续勾选） */
+function EventActionsSelect({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+    const { t } = useTranslation();
+    const actionLabel = (action: string) => t(`ui.automation.action.${action}`);
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="w-full justify-between font-normal">
+                    <span className="truncate">{value.length ? value.map(actionLabel).join(", ") : t("ui.automation.eventActionsPlaceholder")}</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+                {EVENT_ACTIONS.map(action => (
+                    <DropdownMenuCheckboxItem
+                        key={action}
+                        checked={value.includes(action)}
+                        onCheckedChange={checked => onChange(checked ? [...value, action] : value.filter(item => item !== action))}
+                        onSelect={event => event.preventDefault()}
+                    >
+                        {actionLabel(action)}
+                    </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 export function AutomationSettings() {
     const { t } = useTranslation();
@@ -96,7 +125,6 @@ export function AutomationSettings() {
 
     const eventLabel = (type: AutomationEventType) => t(`ui.automation.event.${type}`);
     const targetLabel = (type: AutomationTargetType) => t(`ui.automation.target.${type}`);
-    const actionLabel = (action: string) => t(`ui.automation.action.${action}`);
     const hasUnselectedActions = Boolean(editing?.events.some(event =>
         (event.type === "note_content" || event.type === "file_behavior") && !(event.eventActions || []).length,
     ));
@@ -119,11 +147,11 @@ export function AutomationSettings() {
                         {eventRule.type === "cron" && <Input value={eventRule.schedule || ""} onChange={event => updateEvent(index, { schedule: event.target.value })} placeholder="*/5 * * * *" />}
                         {eventRule.type === "note_content" && <>
                             <div className="space-y-1.5"><Label>{t("ui.automation.contentContains")}</Label><Input value={eventRule.contentContains || ""} onChange={event => updateEvent(index, { contentContains: event.target.value })} placeholder={t("ui.automation.contentPlaceholder")} /></div>
-                            <div className="space-y-1.5"><Label>{t("ui.automation.eventActions")}</Label><p className="text-xs text-muted-foreground">{t("ui.automation.eventActionsHelp")}</p><div className="flex flex-wrap gap-x-4 gap-y-2">{EVENT_ACTIONS.map(action => <label key={action} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={(eventRule.eventActions || []).includes(action)} onChange={change => updateEvent(index, { eventActions: change.target.checked ? [...(eventRule.eventActions || []), action] : (eventRule.eventActions || []).filter(item => item !== action) })} />{actionLabel(action)}</label>)}</div></div>
+                            <div className="space-y-1.5"><Label>{t("ui.automation.eventActions")}</Label><p className="text-xs text-muted-foreground">{t("ui.automation.eventActionsHelp")}</p><EventActionsSelect value={eventRule.eventActions || []} onChange={next => updateEvent(index, { eventActions: next })} /></div>
                         </>}
                         {eventRule.type === "file_behavior" && <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label>{t("ui.automation.pathPrefix")}</Label><Input value={eventRule.pathPrefix || ""} onChange={event => updateEvent(index, { pathPrefix: event.target.value })} placeholder="notes/projects/" /><p className="text-xs text-muted-foreground">{t("ui.automation.pathPrefixHelp")}</p></div><div className="space-y-1.5"><Label>{t("ui.automation.pathGlob")}</Label><Input value={eventRule.pathGlob || ""} onChange={event => updateEvent(index, { pathGlob: event.target.value })} placeholder="notes/*.md" /><p className="text-xs text-muted-foreground">{t("ui.automation.pathGlobHelp")}</p></div></div>
-                            <div className="space-y-1.5"><Label>{t("ui.automation.eventActions")}</Label><p className="text-xs text-muted-foreground">{t("ui.automation.eventActionsHelp")}</p><div className="flex flex-wrap gap-x-4 gap-y-2">{EVENT_ACTIONS.map(action => <label key={action} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={(eventRule.eventActions || []).includes(action)} onChange={change => updateEvent(index, { eventActions: change.target.checked ? [...(eventRule.eventActions || []), action] : (eventRule.eventActions || []).filter(item => item !== action) })} />{actionLabel(action)}</label>)}</div></div>
+                            <div className="space-y-1.5"><Label>{t("ui.automation.eventActions")}</Label><p className="text-xs text-muted-foreground">{t("ui.automation.eventActionsHelp")}</p><EventActionsSelect value={eventRule.eventActions || []} onChange={next => updateEvent(index, { eventActions: next })} /></div>
                         </>}
                         {eventRule.type === "todo_reminder" && <p className="text-xs text-muted-foreground">{t("ui.automation.todoHelp")}</p>}
                         {eventRule.type === "manual" && <p className="text-xs text-muted-foreground">{t("ui.automation.manualHelp")}</p>}
