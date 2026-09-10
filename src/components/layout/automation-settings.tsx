@@ -24,7 +24,7 @@ const EVENT_TYPES: AutomationEventType[] = ["cron", "note_content", "file_behavi
 const emptyRule = (type: AutomationEventType = "note_content"): AutomationEventRule => ({
     type,
     ...(type === "cron" ? { schedule: "*/5 * * * *" } : {}),
-    ...(type === "note_content" ? { contentContains: "", eventActions: [] } : {}),
+    ...(type === "note_content" ? { contentContains: "" } : {}),
     ...(type === "file_behavior" ? { pathPrefix: "", pathGlob: "", eventActions: [] } : {}),
 });
 
@@ -45,7 +45,7 @@ function EventActionsSelect({ value, onChange }: { value: string[]; onChange: (n
                     <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
+            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56">
                 {EVENT_ACTIONS.map(action => (
                     <DropdownMenuCheckboxItem
                         key={action}
@@ -89,7 +89,9 @@ export function AutomationSettings() {
 
     const editItem = (item: AutomationTrigger) => setEditing({
         id: item.id, name: item.name, enabled: item.enabled, vaultId: item.vaultId,
-        timezone: item.timezone || "Asia/Shanghai", matchMode: item.matchMode || "any", events: item.events || [emptyRule()], actions: item.actions || [],
+        timezone: item.timezone || "Asia/Shanghai", matchMode: item.matchMode || "any",
+        events: (item.events || [emptyRule()]).map(event => event.type === "file_behavior" ? event : { ...event, eventActions: undefined }),
+        actions: item.actions || [],
     });
 
     const availableTargets = useMemo(() => ({
@@ -126,7 +128,7 @@ export function AutomationSettings() {
     const eventLabel = (type: AutomationEventType) => t(`ui.automation.event.${type}`);
     const targetLabel = (type: AutomationTargetType) => t(`ui.automation.target.${type}`);
     const hasUnselectedActions = Boolean(editing?.events.some(event =>
-        (event.type === "note_content" || event.type === "file_behavior") && !(event.eventActions || []).length,
+        event.type === "file_behavior" && !(event.eventActions || []).length,
     ));
     const reuseWarnings = editing ? editing.actions.flatMap(action => items.filter(item => item.id !== editing.id && item.vaultId !== editing.vaultId && item.actions.some(existing => existing.type === action.type && existing.configId === action.configId)).map(item => `${targetLabel(action.type)} #${action.configId} 已被笔记库 #${item.vaultId} 的规则使用，可能产生存储/Git 冲突。`)) : [];
 
@@ -147,7 +149,6 @@ export function AutomationSettings() {
                         {eventRule.type === "cron" && <Input value={eventRule.schedule || ""} onChange={event => updateEvent(index, { schedule: event.target.value })} placeholder="*/5 * * * *" />}
                         {eventRule.type === "note_content" && <>
                             <div className="space-y-1.5"><Label>{t("ui.automation.contentContains")}</Label><Input value={eventRule.contentContains || ""} onChange={event => updateEvent(index, { contentContains: event.target.value })} placeholder={t("ui.automation.contentPlaceholder")} /></div>
-                            <div className="space-y-1.5"><Label>{t("ui.automation.eventActions")}</Label><p className="text-xs text-muted-foreground">{t("ui.automation.eventActionsHelp")}</p><EventActionsSelect value={eventRule.eventActions || []} onChange={next => updateEvent(index, { eventActions: next })} /></div>
                         </>}
                         {eventRule.type === "file_behavior" && <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label>{t("ui.automation.pathPrefix")}</Label><Input value={eventRule.pathPrefix || ""} onChange={event => updateEvent(index, { pathPrefix: event.target.value })} placeholder="notes/projects/" /><p className="text-xs text-muted-foreground">{t("ui.automation.pathPrefixHelp")}</p></div><div className="space-y-1.5"><Label>{t("ui.automation.pathGlob")}</Label><Input value={eventRule.pathGlob || ""} onChange={event => updateEvent(index, { pathGlob: event.target.value })} placeholder="notes/*.md" /><p className="text-xs text-muted-foreground">{t("ui.automation.pathGlobHelp")}</p></div></div>

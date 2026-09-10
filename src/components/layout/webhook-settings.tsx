@@ -18,6 +18,18 @@ function defaultTemplates(t: TFunction) {
     };
 }
 
+const templateValues = {
+    content: "{{content}}",
+    vault: "{{vault}}",
+    path: "{{path}}",
+    old_path: "{{old_path}}",
+    action: "{{action}}",
+    title: "{{title}}",
+    due: "{{due}}",
+    timezone: "{{timezone}}",
+    url: "{{url}}",
+};
+
 function headersToText(headers?: Record<string, string>) {
     return Object.entries(headers || {}).map(([name, value]) => `${name}: ${value}`).join("\n");
 }
@@ -64,7 +76,8 @@ export function WebhookSettings() {
         if (!editing || saving) return;
         setSaving(true);
         try {
-            await handleWebhookSave(editing, () => { setEditing(null); reload(); });
+            const request = editing.provider === "custom" ? { ...editing, titleTemplate: "" } : editing;
+            await handleWebhookSave(request, () => { setEditing(null); reload(); });
         } finally {
             setSaving(false);
         }
@@ -72,6 +85,7 @@ export function WebhookSettings() {
 
     const changeProvider = (provider: WebhookProvider) => {
         if (!editing) return;
+        const templates = defaultTemplates(t);
         setEditing({
             ...editing,
             provider,
@@ -79,6 +93,7 @@ export function WebhookSettings() {
             url: provider === "bark" ? "https://api.day.app" : "",
             method: provider === "custom" ? (editing.method || "POST") : "",
             headers: provider === "custom" ? (editing.headers || {}) : {},
+            titleTemplate: provider === "custom" ? "" : (editing.titleTemplate || templates.titleTemplate),
         });
         setHeadersText(provider === "custom" ? headersToText(editing.headers || {}) : "");
     };
@@ -156,12 +171,12 @@ export function WebhookSettings() {
                                 <Input id="webhook-secret" required={!canKeepSecret} type="password" autoComplete="new-password" placeholder={canKeepSecret ? t("ui.webhook.secretKeep") : ""} value={editing.secret || ""} onChange={event => setEditing({ ...editing, secret: event.target.value })} />
                             </Field>
                         )}
-                        <Field id="webhook-title-template" label={t("ui.webhook.titleTemplate")}>
+                        {editing.provider !== "custom" && <Field id="webhook-title-template" label={t("ui.webhook.titleTemplate")}>
                             <Input id="webhook-title-template" value={editing.titleTemplate} onChange={event => setEditing({ ...editing, titleTemplate: event.target.value })} />
-                        </Field>
-                        <Field id="webhook-body-template" label={t("ui.webhook.bodyTemplate")}>
-                            <Textarea id="webhook-body-template" rows={5} value={editing.bodyTemplate} onChange={event => setEditing({ ...editing, bodyTemplate: event.target.value })} />
-                            <p className="whitespace-pre-line text-xs text-muted-foreground">{t("ui.webhook.templateHelp", { content: "{{content}}", vault: "{{vault}}", path: "{{path}}", old_path: "{{old_path}}", action: "{{action}}", title: "{{title}}", due: "{{due}}", timezone: "{{timezone}}", url: "{{url}}" })}</p>
+                        </Field>}
+                        <Field id={editing.provider === "custom" ? "webhook-request-body" : "webhook-body-template"} label={t(editing.provider === "custom" ? "ui.webhook.requestBody" : "ui.webhook.bodyTemplate")}>
+                            <Textarea id={editing.provider === "custom" ? "webhook-request-body" : "webhook-body-template"} rows={5} value={editing.bodyTemplate} onChange={event => setEditing({ ...editing, bodyTemplate: event.target.value })} placeholder={editing.provider === "custom" ? t("ui.webhook.requestBodyPlaceholder") : undefined} />
+                            <p className="whitespace-pre-line text-xs text-muted-foreground">{t(editing.provider === "custom" ? "ui.webhook.requestBodyHelp" : "ui.webhook.templateHelp", templateValues)}</p>
                         </Field>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="ghost" onClick={() => setEditing(null)}>{t("ui.common.cancel")}</Button>
@@ -182,7 +197,7 @@ export function WebhookSettings() {
                     </div>
                     <div className="flex shrink-0 gap-1">
                         <Button size="icon" variant="ghost" title={t(testingId === item.id ? "ui.webhook.testing" : "ui.webhook.test")} disabled={testingId !== null} onClick={() => void test(item.id)}><Send className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => { const templates = defaultTemplates(t); beginEdit({ ...item, method: item.method || "POST", headers: item.headers || {}, titleTemplate: item.titleTemplate || templates.titleTemplate, bodyTemplate: item.bodyTemplate || templates.bodyTemplate, secret: "" }, item); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => { const templates = defaultTemplates(t); beginEdit({ ...item, method: item.method || "POST", headers: item.headers || {}, titleTemplate: item.provider === "custom" ? "" : (item.titleTemplate || templates.titleTemplate), bodyTemplate: item.bodyTemplate || templates.bodyTemplate, secret: "" }, item); }}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" title={t("ui.common.delete")} onClick={() => void handleWebhookDelete(item.id, reload)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 </div>

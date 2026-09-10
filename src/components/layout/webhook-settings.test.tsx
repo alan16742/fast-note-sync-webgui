@@ -51,10 +51,13 @@ describe("notification settings", () => {
         chooseProvider("ui.webhook.providerCustom");
         expect(screen.getByLabelText("ui.webhook.customEndpoint")).toBeRequired();
         expect(screen.getByLabelText("ui.webhook.method")).toHaveTextContent("ui.webhook.methodPost");
+        expect(screen.queryByLabelText("ui.webhook.titleTemplate")).not.toBeInTheDocument();
+        expect(screen.getByLabelText("ui.webhook.requestBody")).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText("ui.webhook.requestBody"), { target: { value: '{"content":"{{content}}"}' } });
         fireEvent.change(screen.getByLabelText("ui.webhook.headers"), { target: { value: "Authorization: Bearer token\nX-Source: fast-note-sync" } });
         expect(mocks.test).not.toHaveBeenCalled();
         fireEvent.click(screen.getByText("ui.webhook.test"));
-        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "custom", method: "POST", headers: { Authorization: "Bearer token", "X-Source": "fast-note-sync" } }));
+        expect(mocks.test).toHaveBeenCalledWith(expect.objectContaining({ provider: "custom", method: "POST", titleTemplate: "", bodyTemplate: '{"content":"{{content}}"}', headers: { Authorization: "Bearer token", "X-Source": "fast-note-sync" } }));
     });
 
     it("treats a pasted backslash-n as header text instead of a line break", () => {
