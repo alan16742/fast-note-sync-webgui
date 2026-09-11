@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -30,20 +30,13 @@ const templateValues = {
     ob_uri: "{{ob_uri}}",
 };
 
-function headersToText(headers?: Record<string, string>) {
-    return Object.entries(headers || {}).map(([name, value]) => `${name}: ${value}`).join("\n");
-}
+type HeaderRow = { id: number; name: string; value: string };
 
-function textToHeaders(value: string): Record<string, string> {
-    const headers: Record<string, string> = {};
-    for (const line of value.split(/\r?\n/)) {
-        const separator = line.indexOf(":");
-        if (separator <= 0) continue;
-        const name = line.slice(0, separator).trim();
-        if (!name) continue;
-        headers[name] = line.slice(separator + 1).trim();
-    }
-    return headers;
+function isSensitiveHeader(name: string) {
+    const key = name.trim().toLowerCase();
+    return ["cookie", "set-cookie", "key"].includes(key)
+        || /auth|token|secret|password|passwd|credential|api_key|api-key|apikey/.test(key)
+        || /[-_]key$|^key[-_]/.test(key);
 }
 
 function newSubscription(t: TFunction): WebhookSubscriptionRequest {
@@ -64,7 +57,32 @@ export function WebhookSettings() {
     const [items, setItems] = useState<WebhookSubscription[]>([]);
     const [editing, setEditing] = useState<WebhookSubscriptionRequest | null>(null);
     const [original, setOriginal] = useState<WebhookSubscription | null>(null);
-    const [headersText, setHeadersText] = useState("");
+    const [headerRows, setHeaderRows] = useState<HeaderRow[]>([]);
+    const nextHeaderID = useRef(0);
+    const [headerError, setHeaderError] = useState("");
+    const makeHeaderRows = (headers: Record<string, string>) => Object.entries(headers).map(([name, value]) => ({ id: nextHeaderID.current++, name, value }));
+    const requestWithHeaders = (value: WebhookSubscriptionRequest): WebhookSubscriptionRequest | null => {
+        if (value.provider !== "custom") return value;
+        const entries: [string, string][] = [];
+        const seen = new Set<string>();
+        for (const row of headerRows) {
+            if (!row.name && !row.value) continue;
+            const name = row.name.trim();
+            if (!name || name.length > 256 || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)
+                || seen.has(name.toLowerCase()) || new TextEncoder().encode(row.value).length > 8192 || /[\x00-\x08\x0a-\x1f\x7f]/.test(row.value)) {
+                setHeaderError(t("ui.webhook.headersInvalid"));
+                return null;
+            }
+            seen.add(name.toLowerCase());
+            entries.push([name, row.value]);
+        }
+        if (entries.length > 64) {
+            setHeaderError(t("ui.webhook.headersInvalid"));
+            return null;
+        }
+        setHeaderError("");
+        return { ...value, headers: Object.fromEntries(entries), titleTemplate: "" };
+    };
     const [saving, setSaving] = useState(false);
     const [testingId, setTestingId] = useState<number | null>(null);
 
@@ -74,9 +92,10 @@ export function WebhookSettings() {
     const save = async (event: FormEvent) => {
         event.preventDefault();
         if (!editing || saving) return;
+        const request = requestWithHeaders(editing);
+        if (!request) return;
         setSaving(true);
         try {
-            const request = editing.provider === "custom" ? { ...editing, titleTemplate: "" } : editing;
             await handleWebhookSave(request, () => { setEditing(null); reload(); });
         } finally {
             setSaving(false);
@@ -95,21 +114,25 @@ export function WebhookSettings() {
             headers: provider === "custom" ? (editing.headers || {}) : {},
             titleTemplate: provider === "custom" ? "" : (editing.titleTemplate || templates.titleTemplate),
         });
-        setHeadersText(provider === "custom" ? headersToText(editing.headers || {}) : "");
+        setHeaderRows([]);
+        setHeaderError("");
     };
 
     const beginEdit = (value: WebhookSubscriptionRequest, source?: WebhookSubscription | null) => {
         setOriginal(source || null);
         setEditing(value);
-        setHeadersText(headersToText(value.headers));
+        setHeaderRows(makeHeaderRows(value.headers || {}));
+        setHeaderError("");
     };
 
     const test = async (target: number | WebhookSubscriptionRequest) => {
         if (testingId !== null) return;
+        const request = typeof target === "number" ? target : requestWithHeaders(target);
+        if (request === null) return;
         const id = typeof target === "number" ? target : target.id || -1;
         setTestingId(id);
         try {
-            await handleWebhookTest(target);
+            await handleWebhookTest(request);
         } finally {
             setTestingId(null);
         }
@@ -134,16 +157,17 @@ export function WebhookSettings() {
                             <Select value={editing.provider} onValueChange={value => changeProvider(value as WebhookProvider)}>
                                 <SelectTrigger id="webhook-provider" className="bg-background border-input"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="serverchan">{t("ui.webhook.providerServerChan")}</SelectItem>
-                                    <SelectItem value="bark">{t("ui.webhook.providerBark")}</SelectItem>
-                                    <SelectItem value="custom">{t("ui.webhook.providerCustom")}</SelectItem>
+                                    <SelectItem value="serverchan">ServerChan</SelectItem>
+                                    <SelectItem value="bark">Bark</SelectItem>
+                                    <SelectItem value="custom">Webhook</SelectItem>
                                 </SelectContent>
                             </Select>
                         </Field>
-                        {(editing.provider === "bark" || editing.provider === "custom") && (
-                            <Field id="webhook-url" label={t(editing.provider === "bark" ? "ui.webhook.endpoint" : "ui.webhook.customEndpoint")}>
+
+                        {(["bark", "custom"].includes(editing.provider) &&
+                            <Field id="webhook-url" label={t("ui.webhook.endpoint")}>
                                 <Input id="webhook-url" required={editing.provider === "custom"} type={editing.provider === "custom" ? "text" : "url"} placeholder={editing.provider === "bark" ? "https://api.day.app" : "https://example.com/webhook?title={{content}}"} value={editing.url} onChange={event => setEditing({ ...editing, url: event.target.value })} />
-                                {editing.provider === "bark" && <p className="text-xs text-muted-foreground">{t("ui.webhook.barkHelp")}</p>}
+                                <p className="text-xs text-muted-foreground">{t("ui.webhook.endpointHelp")}</p>
                             </Field>
                         )}
                         {editing.provider === "custom" ? (
@@ -152,22 +176,34 @@ export function WebhookSettings() {
                                     <Select value={editing.method || "POST"} onValueChange={value => setEditing({ ...editing, method: value })}>
                                         <SelectTrigger id="webhook-method" className="bg-background border-input"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="POST">{t("ui.webhook.methodPost")}</SelectItem>
-                                            <SelectItem value="GET">{t("ui.webhook.methodGet")}</SelectItem>
+                                            <SelectItem value="POST">POST</SelectItem>
+                                            <SelectItem value="GET">GET</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </Field>
-                                <Field id="webhook-headers" label={t("ui.webhook.headers")}>
-                                    <Textarea id="webhook-headers" rows={4} value={headersText} onChange={event => {
-                                        const value = event.target.value;
-                                        setHeadersText(value);
-                                        setEditing({ ...editing, headers: textToHeaders(value) });
-                                    }} placeholder={'Authorization: Bearer ...\nX-Source: fast-note-sync'} />
+                                <div className="grid gap-2" role="group" aria-labelledby="webhook-headers-label">
+                                    <Label id="webhook-headers-label">{t("ui.webhook.headers")}</Label>
+                                    {headerRows.map((row, index) => {
+                                        const protectedValue = original?.provider === "custom" && original.protectedHeaders?.some(name => name.toLowerCase() === row.name.trim().toLowerCase());
+                                        const sensitive = protectedValue || isSensitiveHeader(row.name);
+                                        return <div key={row.id} className="flex items-start gap-2">
+                                            <div className="grid flex-1 min-w-0 grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <Input aria-label={`${t("ui.settings.headerNamePlaceholder")} ${index + 1}`} placeholder="Authorization" value={row.name} maxLength={256} onChange={event => { setHeaderError(""); setHeaderRows(rows => rows.map(item => item.id === row.id ? { ...item, name: event.target.value } : item)); }} />
+                                                <div className="grid gap-1">
+                                                    <Input aria-label={`${t("ui.settings.headerValuePlaceholder")} ${index + 1}`} type={sensitive ? "password" : "text"} autoComplete="new-password" placeholder={protectedValue ? t("ui.webhook.secretKeep") : t("ui.settings.headerValuePlaceholder")} value={row.value} maxLength={8192} onChange={event => { setHeaderError(""); setHeaderRows(rows => rows.map(item => item.id === row.id ? { ...item, value: event.target.value } : item)); }} />
+                                                    {protectedValue && <p className="text-xs text-muted-foreground">{t("ui.webhook.secretSet")}</p>}
+                                                </div>
+                                            </div>
+                                            <Button type="button" variant="ghost" size="icon" aria-label={`${t("ui.common.delete")} ${index + 1}`} onClick={() => { setHeaderRows(rows => rows.filter(item => item.id !== row.id)); setHeaderError(""); }}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>;
+                                    })}
+                                    <Button type="button" variant="outline" className="justify-self-start" disabled={headerRows.length >= 64} onClick={() => setHeaderRows(rows => [...rows, { id: nextHeaderID.current++, name: "", value: "" }])}><Plus className="h-4 w-4" />{t("ui.common.add")}</Button>
                                     <p className="whitespace-pre-line text-xs text-muted-foreground">{t("ui.webhook.headersHelp")}</p>
-                                </Field>
+                                    {headerError && <p role="alert" className="text-sm text-destructive">{headerError}</p>}
+                                </div>
                             </>
                         ) : (
-                            <Field id="webhook-secret" label={t(editing.provider === "serverchan" ? "ui.webhook.sendKey" : "ui.webhook.deviceKey")}>
+                            <Field id="webhook-secret" label={t("ui.webhook.secret")}>
                                 <Input id="webhook-secret" required={!canKeepSecret} type="password" autoComplete="new-password" placeholder={canKeepSecret ? t("ui.webhook.secretKeep") : ""} value={editing.secret || ""} onChange={event => setEditing({ ...editing, secret: event.target.value })} />
                             </Field>
                         )}
@@ -175,8 +211,8 @@ export function WebhookSettings() {
                             <Input id="webhook-title-template" value={editing.titleTemplate} onChange={event => setEditing({ ...editing, titleTemplate: event.target.value })} />
                         </Field>}
                         <Field id={editing.provider === "custom" ? "webhook-request-body" : "webhook-body-template"} label={t(editing.provider === "custom" ? "ui.webhook.requestBody" : "ui.webhook.bodyTemplate")}>
-                            <Textarea id={editing.provider === "custom" ? "webhook-request-body" : "webhook-body-template"} rows={5} value={editing.bodyTemplate} onChange={event => setEditing({ ...editing, bodyTemplate: event.target.value })} placeholder={editing.provider === "custom" ? t("ui.webhook.requestBodyPlaceholder") : undefined} />
-                            <p className="whitespace-pre-line text-xs text-muted-foreground">{t(editing.provider === "custom" ? "ui.webhook.requestBodyHelp" : "ui.webhook.templateHelp", templateValues)}</p>
+                            <Textarea id={editing.provider === "custom" ? "webhook-request-body" : "webhook-body-template"} rows={5} value={editing.bodyTemplate} onChange={event => setEditing({ ...editing, bodyTemplate: event.target.value })} />
+                            <p className="whitespace-pre-line text-xs text-muted-foreground">{t("ui.webhook.requestBodyHelp", templateValues)}</p>
                         </Field>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="ghost" onClick={() => setEditing(null)}>{t("ui.common.cancel")}</Button>
@@ -191,7 +227,7 @@ export function WebhookSettings() {
                     <div className="flex min-w-0 items-center gap-3">
                         <Webhook className="h-4 w-4 shrink-0 text-primary" />
                         <div className="min-w-0">
-                            <div className="truncate font-medium">{item.url || t("ui.webhook.providerServerChan")}</div>
+                            <div className="truncate font-medium">{item.url || "ServerChan"}</div>
                             <div className="text-xs text-muted-foreground">{item.hasSecret && t("ui.webhook.secretSet")}</div>
                         </div>
                     </div>

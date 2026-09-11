@@ -21,7 +21,7 @@ export function useWebhookHandle() {
                 ...item,
                 provider: item.provider === "bark" ? "bark" : item.provider === "custom" ? "custom" : "serverchan",
                 method: item.method || "POST",
-                headers: item.headers || {},
+                headers: normalizeHeaders(item.headers),
                 titleTemplate: item.titleTemplate || "",
                 bodyTemplate: item.bodyTemplate || "",
             })));
@@ -79,6 +79,30 @@ export function useWebhookHandle() {
     }, [openConfirmDialog, t, token]);
 
     return useMemo(() => ({ handleWebhookList, handleWebhookSave, handleWebhookDelete, handleWebhookTest }), [handleWebhookDelete, handleWebhookList, handleWebhookSave, handleWebhookTest]);
+}
+
+function normalizeHeaders(headers: unknown): Record<string, string> {
+    if (typeof headers === "string") {
+        try {
+            return normalizeHeaders(JSON.parse(headers));
+        } catch {
+            return {};
+        }
+    }
+    if (Array.isArray(headers)) {
+        const result: Record<string, string> = {};
+        for (const header of headers) {
+            if (!header || typeof header !== "object" || !("key" in header)) continue;
+            const row = header as { key?: unknown; value?: unknown };
+            const key = String(row.key || "").trim();
+            if (key) result[key] = String(row.value ?? "");
+        }
+        return result;
+    }
+    if (!headers || typeof headers !== "object") {
+        return {};
+    }
+    return Object.fromEntries(Object.entries(headers as Record<string, unknown>).map(([key, value]) => [key, String(value ?? "")]));
 }
 
 function apiError(result: { message?: string; details?: string | string[] }): string {

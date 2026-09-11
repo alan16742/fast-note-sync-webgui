@@ -8,6 +8,7 @@ export interface WebhookSubscription {
     method: string;
     headers: Record<string, string>;
     hasSecret: boolean;
+    protectedHeaders?: string[];
     titleTemplate: string;
     bodyTemplate: string;
     createdAt?: string;

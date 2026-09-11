@@ -90,7 +90,7 @@ export function AutomationSettings() {
     const editItem = (item: AutomationTrigger) => setEditing({
         id: item.id, name: item.name, enabled: item.enabled, vaultId: item.vaultId,
         timezone: item.timezone || "Asia/Shanghai", matchMode: item.matchMode || "any",
-        events: (item.events || [emptyRule()]).map(event => event.type === "file_behavior" ? event : { ...event, eventActions: undefined }),
+        events: item.events || [emptyRule()],
         actions: item.actions || [],
     });
 
