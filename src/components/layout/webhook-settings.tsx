@@ -24,10 +24,10 @@ const templateValues = {
     path: "{{path}}",
     old_path: "{{old_path}}",
     action: "{{action}}",
-    title: "{{title}}",
+    task: "{{task}}",
     due: "{{due}}",
     timezone: "{{timezone}}",
-    url: "{{url}}",
+    ob_uri: "{{ob_uri}}",
 };
 
 function headersToText(headers?: Record<string, string>) {

@@ -10,7 +10,7 @@ vi.mock("react-i18next", async (importOriginal) => ({ ...await importOriginal<ty
 
 const request: WebhookSubscriptionRequest = {
     provider: "bark", url: "", method: "POST", headers: {}, secret: "key",
-    titleTemplate: "{{title}}", bodyTemplate: "{{content}}",
+    titleTemplate: "{{task}}", bodyTemplate: "{{content}}",
 };
 
 describe("notification API handling", () => {
@@ -33,7 +33,7 @@ describe("notification API handling", () => {
         const callback = vi.fn();
         const { result } = renderHook(() => useWebhookHandle());
         await act(async () => result.current.handleWebhookSave(request, callback));
-        expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ provider: "bark", secret: "key", titleTemplate: "{{title}}" });
+        expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ provider: "bark", secret: "key", titleTemplate: "{{task}}" });
         expect(callback).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
         expect(mocks.success).toHaveBeenCalledOnce();
     });
