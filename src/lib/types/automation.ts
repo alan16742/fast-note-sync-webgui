@@ -28,6 +28,7 @@ export interface AutomationTrigger {
     actions: AutomationAction[];
     warnings?: string[];
     lastRunAt?: string;
+    lastAttemptAt?: string;
     createdAt?: string;
     updatedAt?: string;
 }
