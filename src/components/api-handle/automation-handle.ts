@@ -1,4 +1,4 @@
-import type { AutomationTrigger, AutomationTriggerRequest } from "@/lib/types/automation";
+import type { AutomationExecution, AutomationTrigger, AutomationTriggerRequest } from "@/lib/types/automation";
 import { addCacheBuster } from "@/lib/utils/cache-buster";
 import { buildApiHeaders } from "@/lib/utils/api-headers";
 import { useConfirmDialog } from "@/components/context/confirm-dialog-context";
@@ -67,10 +67,28 @@ export function useAutomationHandle() {
         if (result) toast.success(result.message || t("api.automation.trigger.success"));
     }, [request, t]);
 
+    const handleAutomationExecutionList = useCallback(async (callback: (items: AutomationExecution[]) => void) => {
+        const result = await request("/api/automations/executions?page=1&pageSize=100", { method: "GET" }, "api.automation.executionList.error");
+        if (result) callback(result.data?.list || []);
+    }, [request]);
+
+    const handleAutomationExecutionRetry = useCallback(async (id: number, callback?: () => void) => {
+        const result = await request("/api/automations/executions/retry", {
+            method: "POST",
+            body: JSON.stringify({ id }),
+        }, "api.automation.executionRetry.error");
+        if (result) {
+            toast.success(result.message || t("api.automation.executionRetry.success"));
+            callback?.();
+        }
+    }, [request, t]);
+
     return useMemo(() => ({
         handleAutomationList,
         handleAutomationSave,
         handleAutomationDelete,
         handleAutomationTrigger,
-    }), [handleAutomationDelete, handleAutomationList, handleAutomationSave, handleAutomationTrigger]);
+        handleAutomationExecutionList,
+        handleAutomationExecutionRetry,
+    }), [handleAutomationDelete, handleAutomationExecutionList, handleAutomationExecutionRetry, handleAutomationList, handleAutomationSave, handleAutomationTrigger]);
 }
