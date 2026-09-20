@@ -3,7 +3,7 @@ import { useBackupHandle } from "@/components/api-handle/backup-handle";
 import { useGitHandle } from "@/components/api-handle/git-handle";
 import { useVaultHandle } from "@/components/api-handle/vault-handle";
 import { useWebhookHandle } from "@/components/api-handle/webhook-handle";
-import type { AutomationAction, AutomationEventRule, AutomationEventType, AutomationExecution, AutomationMatchMode, AutomationTargetType, AutomationTrigger, AutomationTriggerRequest } from "@/lib/types/automation";
+import type { AutomationAction, AutomationEventRule, AutomationEventType, AutomationMatchMode, AutomationTargetType, AutomationTrigger, AutomationTriggerRequest } from "@/lib/types/automation";
 import type { BackupConfig } from "@/lib/types/backup";
 import type { GitSyncConfigDTO } from "@/lib/types/git";
 import type { VaultType } from "@/lib/types/vault";
@@ -14,8 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Pencil, Play, Plus, RefreshCw, RotateCcw, Trash2, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, History, Pencil, Play, Plus, RefreshCw, RotateCcw, Trash2, Zap } from "lucide-react";
+import { AutomationExecutionHistory } from "./automation-execution-history";
 import { cn } from "@/lib/utils";
 
 const EVENT_ACTIONS = ["create", "modify", "delete", "rename", "restore", "permanent_delete"];
@@ -68,7 +69,7 @@ function EventActionsSelect({ value, onChange }: { value: string[]; onChange: (n
 
 export function AutomationSettings() {
     const { t } = useTranslation();
-    const { handleAutomationList, handleAutomationSave, handleAutomationDelete, handleAutomationTrigger, handleAutomationExecutionList, handleAutomationExecutionRetry } = useAutomationHandle();
+    const { handleAutomationList, handleAutomationSave, handleAutomationDelete, handleAutomationTrigger, handleAutomationExecutionRetry } = useAutomationHandle();
     const { handleBackupConfigList } = useBackupHandle();
     const { handleGitSyncList } = useGitHandle();
     const { handleVaultList } = useVaultHandle();
@@ -79,19 +80,43 @@ export function AutomationSettings() {
     const [gitConfigs, setGitConfigs] = useState<GitSyncConfigDTO[]>([]);
     const [webhooks, setWebhooks] = useState<WebhookSubscription[]>([]);
     const [vaults, setVaults] = useState<VaultType[]>([]);
-    const [executions, setExecutions] = useState<AutomationExecution[]>([]);
+    const [historyTrigger, setHistoryTrigger] = useState<AutomationTrigger | null>(null);
+    const [busy, setBusy] = useState<Set<number>>(new Set());
+    const busyRef = useRef(new Set<number>());
+    const reloadID = useRef(0);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const reload = useCallback(() => {
+        const id = ++reloadID.current;
         setLoading(true);
-        void Promise.all([
-            handleAutomationList(setItems), handleAutomationExecutionList(setExecutions), handleBackupConfigList(setBackups),
-            handleGitSyncList(setGitConfigs), handleWebhookList(setWebhooks), handleVaultList(setVaults),
-        ]).finally(() => setLoading(false));
-    }, [handleAutomationExecutionList, handleAutomationList, handleBackupConfigList, handleGitSyncList, handleWebhookList, handleVaultList]);
+        const current = <T,>(set: (value: T) => void) => (value: T) => {
+            if (id === reloadID.current) set(value);
+        };
+        return Promise.all([
+            handleAutomationList(current(setItems)), handleBackupConfigList(current(setBackups)),
+            handleGitSyncList(current(setGitConfigs)), handleWebhookList(current(setWebhooks)), handleVaultList(current(setVaults)),
+        ]).finally(() => { if (id === reloadID.current) setLoading(false); });
+    }, [handleAutomationList, handleBackupConfigList, handleGitSyncList, handleWebhookList, handleVaultList]);
 
-    useEffect(() => { reload(); }, [reload]);
+    useEffect(() => {
+        const requests = reloadID;
+        void reload();
+        return () => { requests.current++; };
+    }, [reload]);
+
+    const execute = async (id: number, action: () => Promise<unknown>) => {
+        if (busyRef.current.has(id)) return;
+        busyRef.current.add(id);
+        setBusy(new Set(busyRef.current));
+        try {
+            await action();
+        } finally {
+            await reload();
+            busyRef.current.delete(id);
+            setBusy(new Set(busyRef.current));
+        }
+    };
 
     const editItem = (item: AutomationTrigger) => setEditing({
         id: item.id, name: item.name, enabled: item.enabled, vaultId: item.vaultId,
@@ -124,7 +149,7 @@ export function AutomationSettings() {
             timezone: item.timezone || "Asia/Shanghai", matchMode: item.matchMode || "any",
             events: item.events || [], actions: item.actions || [],
         };
-        void handleAutomationSave(request, reload);
+        void execute(item.id, () => handleAutomationSave(request, () => {}));
     };
 
     const save = (event: React.FormEvent) => {
@@ -146,17 +171,12 @@ export function AutomationSettings() {
     const hasUnselectedActions = Boolean(editing?.events.some(event =>
         event.type === "file_behavior" && !(event.eventActions || []).length,
     ));
-    const reuseWarnings = editing ? editing.actions.flatMap(action => items.filter(item => item.id !== editing.id && item.vaultId !== editing.vaultId && item.actions.some(existing => existing.type === action.type && existing.configId === action.configId)).map(item => `${targetLabel(action.type)} #${action.configId} 已被笔记库 #${item.vaultId} 的规则使用，可能产生存储/Git 冲突。`)) : [];
-    const latestExecutionByTrigger = useMemo(() => {
-        const result = new Map<number, AutomationExecution>();
-        for (const execution of executions) {
-            const current = result.get(execution.triggerId);
-            if (!current || execution.id > current.id) result.set(execution.triggerId, execution);
-        }
-        return result;
-    }, [executions]);
-    const executionStatusLabel = (status: AutomationExecution["status"]) => t(`ui.automation.executionStatus.${status}`);
-    const executionTime = (value?: string) => value ? new Date(value.replace(" ", "T")).toLocaleString() : t("ui.common.never");
+    const reuseWarnings = editing ? editing.actions.flatMap(action => items.filter(item => item.id !== editing.id && item.vaultId !== editing.vaultId && item.actions.some(existing => existing.type === action.type && existing.configId === action.configId)).map(item => t("ui.automation.targetReuseWarning", { target: targetLabel(action.type), configId: action.configId, vaultId: item.vaultId }))) : [];
+    const executionTime = (value?: string | null) => {
+        if (!value) return t("ui.common.never");
+        const date = new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z");
+        return Number.isNaN(date.getTime()) ? t("ui.common.never") : date.toLocaleString();
+    };
 
     return <div className="max-w-5xl mx-auto pb-24 space-y-4">
         <div className="flex items-start justify-between gap-4">
@@ -193,10 +213,34 @@ export function AutomationSettings() {
                 {!editing.actions.length && <p className="text-sm text-destructive">{t("ui.automation.noTargets")}</p>}
                 {reuseWarnings.length > 0 && <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 space-y-1">{[...new Set(reuseWarnings)].map(warning => <p key={warning}>{warning}</p>)}</div>}
             </div>
-            <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setEditing(null)}>{t("ui.common.cancel")}</Button><Button type="submit" disabled={saving || !editing.vaultId || hasUnselectedActions || invalidAllCombination || invalidAllFileActions || editing.actions.some(action => action.configId <= 0)}>{t("ui.common.save")}</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setEditing(null)}>{t("ui.common.cancel")}</Button><Button type="submit" disabled={saving || !editing.actions.length || !editing.vaultId || hasUnselectedActions || invalidAllCombination || invalidAllFileActions || editing.actions.some(action => action.configId <= 0)}>{t("ui.common.save")}</Button></div>
         </form>}
 
-        <div className="space-y-3">{items.map(item => { const execution = latestExecutionByTrigger.get(item.id); return <div key={item.id} className="border rounded-xl p-4 bg-card flex flex-col md:flex-row md:items-center justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-2"><input type="checkbox" checked={item.enabled} onChange={() => toggleEnabled(item)} aria-label={t("ui.automation.toggleEnabled")} /><span className="font-semibold truncate">{item.name}</span><span className="text-xs text-muted-foreground">#{item.vaultId}</span></div><div className="text-xs text-muted-foreground mt-1">{item.events.map(event => eventLabel(event.type)).join(" / ")} · {item.actions.map(action => `${targetLabel(action.type)} #${action.configId}`).join(", ")}</div><div className="text-xs text-muted-foreground mt-1">{t("ui.automation.executionStatus")}: {execution ? executionStatusLabel(execution.status) : t("ui.common.never")} · {t("ui.automation.lastExecution")}: {executionTime(execution?.finishedAt || execution?.startedAt)}{execution?.error && <span className="text-destructive" title={execution.error}> · {execution.error}</span>}</div></div><div className="flex shrink-0 gap-1"><Button size="icon" variant="ghost" title={t("ui.automation.run")} disabled={!item.enabled || !item.events.some(event => event.type === "manual")} onClick={() => void handleAutomationTrigger(item.id).then(reload)}><Play className="h-4 w-4" /></Button>{execution && (execution.status === "failed" || execution.status === "cancelled") && <Button size="icon" variant="ghost" title={t("ui.automation.retry")} onClick={() => void handleAutomationExecutionRetry(execution.id, reload)}><RotateCcw className="h-4 w-4" /></Button>}<Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => editItem(item)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" title={t("ui.common.delete")} onClick={() => void handleAutomationDelete(item.id, reload)}><Trash2 className="h-4 w-4" /></Button></div></div>; })}
+        <div className="space-y-3">{items.map(item => {
+            const execution = item.latestExecution;
+            const pending = busy.has(item.id) || execution?.status === "running" || execution?.status === "pending";
+            return <div key={item.id} className="border rounded-xl p-4 bg-card flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" checked={item.enabled} disabled={pending} onChange={() => toggleEnabled(item)} aria-label={t("ui.automation.toggleEnabled")} />
+                        <span className="font-semibold truncate">{item.name}</span><span className="text-xs text-muted-foreground">#{item.vaultId}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">{item.events.map(event => eventLabel(event.type)).join(" / ")} · {item.actions.map(action => `${targetLabel(action.type)} #${action.configId}`).join(", ")}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                        {t("ui.automation.executionStatus")}: {execution ? t(`ui.automation.executionStatus.${execution.status}`) : t("ui.automation.historyEmpty")} · {t("ui.automation.lastExecution")}: {executionTime(execution?.finishedAt || execution?.startedAt)}
+                        {execution?.error && <span className="text-destructive break-words" title={execution.error}> · {execution.error}</span>}
+                    </div>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                    <Button size="icon" variant="ghost" title={t("ui.automation.run")} disabled={pending || !item.enabled || !item.events.some(event => event.type === "manual")} onClick={() => void execute(item.id, () => handleAutomationTrigger(item.id))}><Play className="h-4 w-4" /></Button>
+                    {execution && (execution.status === "failed" || execution.status === "cancelled") && <Button size="icon" variant="ghost" title={t("ui.automation.retry")} disabled={pending || !item.enabled} onClick={() => void execute(item.id, () => handleAutomationExecutionRetry(execution.id))}><RotateCcw className="h-4 w-4" /></Button>}
+                    <Button size="icon" variant="ghost" title={t("ui.automation.history")} onClick={() => setHistoryTrigger(item)}><History className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => editItem(item)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title={t("ui.common.delete")} onClick={() => void handleAutomationDelete(item.id, reload)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+            </div>;
+        })}
         {!loading && !items.length && !editing && <div className="border border-dashed rounded-xl p-10 text-center text-sm text-muted-foreground">{t("ui.automation.empty")}</div>}</div>
+        {historyTrigger && <AutomationExecutionHistory key={historyTrigger.id} trigger={items.find(item => item.id === historyTrigger.id) || historyTrigger} onClose={() => setHistoryTrigger(null)} onChanged={reload} />}
     </div>;
 }

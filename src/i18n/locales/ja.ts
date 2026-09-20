@@ -838,6 +838,9 @@ export default {
     "ui.automation.executionStatus.succeeded": "成功",
     "ui.automation.executionStatus.failed": "失敗",
     "ui.automation.executionStatus.cancelled": "キャンセル済み",
+    "ui.automation.history": "実行履歴",
+    "ui.automation.historyEmpty": "実行履歴はありません",
+    "ui.automation.targetReuseWarning": "{{target}} #{{configId}} は保管庫 #{{vaultId}} のルールでも使用されています。ストレージまたは Git の競合が発生する可能性があります。",
     "ui.automation.retry": "失敗したアクションを再試行",
 
     // --- ui.validation ---

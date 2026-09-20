@@ -838,6 +838,9 @@ export default {
     "ui.automation.executionStatus.succeeded": "Succeeded",
     "ui.automation.executionStatus.failed": "Failed",
     "ui.automation.executionStatus.cancelled": "Cancelled",
+    "ui.automation.history": "Execution history",
+    "ui.automation.historyEmpty": "No executions yet",
+    "ui.automation.targetReuseWarning": "{{target}} #{{configId}} is also used by a rule in vault #{{vaultId}}. Storage or Git conflicts may occur.",
     "ui.automation.retry": "Retry failed actions",
 
     // --- ui.validation ---

@@ -28,6 +28,7 @@ export interface AutomationTrigger {
     events: AutomationEventRule[];
     actions: AutomationAction[];
     warnings?: string[];
+    latestExecution?: AutomationExecution;
     lastRunAt?: string;
     lastAttemptAt?: string;
     createdAt?: string;
@@ -50,8 +51,8 @@ export interface AutomationActionExecution {
     configId: number;
     status: AutomationExecutionStatus;
     error?: string;
-    startedAt?: string;
-    finishedAt?: string;
+    startedAt?: string | null;
+    finishedAt?: string | null;
 }
 
 export interface AutomationExecution {
@@ -64,8 +65,8 @@ export interface AutomationExecution {
     status: AutomationExecutionStatus;
     error?: string;
     actions: AutomationActionExecution[];
-    startedAt?: string;
-    finishedAt?: string;
+    startedAt?: string | null;
+    finishedAt?: string | null;
     createdAt?: string;
     updatedAt?: string;
 }

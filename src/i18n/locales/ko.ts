@@ -838,6 +838,9 @@ export default {
     "ui.automation.executionStatus.succeeded": "성공",
     "ui.automation.executionStatus.failed": "실패",
     "ui.automation.executionStatus.cancelled": "취소됨",
+    "ui.automation.history": "실행 기록",
+    "ui.automation.historyEmpty": "실행 기록이 없습니다",
+    "ui.automation.targetReuseWarning": "{{target}} #{{configId}}은(는) 보관함 #{{vaultId}}의 규칙에서도 사용됩니다. 저장소 또는 Git 충돌이 발생할 수 있습니다.",
     "ui.automation.retry": "실패한 작업 재시도",
 
     // --- ui.validation ---

@@ -838,6 +838,9 @@ export default {
     "ui.automation.executionStatus.succeeded": "成功",
     "ui.automation.executionStatus.failed": "失败",
     "ui.automation.executionStatus.cancelled": "已取消",
+    "ui.automation.history": "执行历史",
+    "ui.automation.historyEmpty": "暂无执行记录",
+    "ui.automation.targetReuseWarning": "{{target}} #{{configId}} 已被笔记库 #{{vaultId}} 的规则使用，可能产生存储或 Git 冲突。",
     "ui.automation.retry": "重试失败目标",
 
     // --- ui.validation ---

@@ -47,7 +47,7 @@ export function useAutomationHandle() {
             }
             callback(result.data);
         }
-    }, [request, t]);
+    }, [openConfirmDialog, request, t]);
 
     const handleAutomationDelete = useCallback(async (id: number, callback: () => void) => {
         openConfirmDialog(t("ui.automation.deleteConfirm"), "confirm", async () => {
@@ -67,9 +67,10 @@ export function useAutomationHandle() {
         if (result) toast.success(result.message || t("api.automation.trigger.success"));
     }, [request, t]);
 
-    const handleAutomationExecutionList = useCallback(async (callback: (items: AutomationExecution[]) => void) => {
-        const result = await request("/api/automations/executions?page=1&pageSize=100", { method: "GET" }, "api.automation.executionList.error");
-        if (result) callback(result.data?.list || []);
+    const handleAutomationExecutionList = useCallback(async (triggerId: number, page: number): Promise<{ list: AutomationExecution[]; total: number } | null> => {
+        const query = new URLSearchParams({ triggerId: String(triggerId), page: String(page), pageSize: "20" });
+        const result = await request(`/api/automations/executions?${query}`, { method: "GET" }, "api.automation.executionList.error");
+        return result ? { list: result.data?.list || [], total: result.data?.pager?.totalRows || 0 } : null;
     }, [request]);
 
     const handleAutomationExecutionRetry = useCallback(async (id: number, callback?: () => void) => {

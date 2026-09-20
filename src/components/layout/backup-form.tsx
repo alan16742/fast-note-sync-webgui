@@ -43,12 +43,13 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
         passwordValue: config?.passwordValue ?? "",
         retentionDays: config?.retentionDays ?? 10,
     }), [config, initialStorageIds]);
-    const { register, handleSubmit, formState: { errors, isDirty }, setValue, watch, reset } = useForm<BackupFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty, isSubmitting }, setValue, watch, reset } = useForm<BackupFormData>({
         resolver: zodResolver(schema),
         defaultValues,
     });
 
     useEffect(() => setDirty("backup-config", isDirty), [isDirty, setDirty]);
+    useEffect(() => () => setDirty("backup-config", false), [setDirty]);
     useEffect(() => {
         setSelectedStorageIds(initialStorageIds);
         reset(defaultValues);
@@ -71,8 +72,8 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [handleCancel, onCancel]);
 
-    const onFormSubmit = (data: BackupFormData) => {
-        handleBackupConfigUpdate({
+    const onFormSubmit = async (data: BackupFormData) => {
+        await handleBackupConfigUpdate({
             id: config?.id,
             storageIds: data.storageIds,
             type: data.type,
@@ -150,7 +151,7 @@ export function BackupForm({ config, storages, onSubmit, onCancel }: BackupFormP
         </div>
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
             {onCancel && <Button type="button" variant="ghost" onClick={handleCancel}>{t("ui.common.cancel")}</Button>}
-            <Button type="submit">{config ? t("ui.common.save") : t("ui.common.add")}</Button>
+            <Button type="submit" disabled={isSubmitting}>{config ? t("ui.common.save") : t("ui.common.add")}</Button>
         </div>
     </form>;
 }

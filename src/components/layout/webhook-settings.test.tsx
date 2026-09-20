@@ -122,4 +122,16 @@ describe("notification settings", () => {
         expect(mocks.test).not.toHaveBeenCalled();
     });
 
+    it("keeps an intentionally empty custom request body when editing", () => {
+        mocks.list.mockImplementation((callback: (items: unknown[]) => void) => callback([{
+            id: 1, provider: "custom", url: "https://example.com", method: "POST",
+            headers: {}, bodyTemplate: "", titleTemplate: "", hasSecret: false,
+        }]));
+        render(<WebhookSettings />);
+        fireEvent.click(screen.getByTitle("ui.common.edit"));
+        expect(screen.getByLabelText("ui.webhook.requestBody")).toHaveValue("");
+        fireEvent.click(screen.getByText("ui.common.save"));
+        expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ bodyTemplate: "" }), expect.any(Function));
+    });
+
 });

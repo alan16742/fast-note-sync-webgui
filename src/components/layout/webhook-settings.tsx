@@ -69,7 +69,7 @@ export function WebhookSettings() {
             if (!row.name && !row.value) continue;
             const name = row.name.trim();
             if (!name || name.length > 256 || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)
-                || seen.has(name.toLowerCase()) || new TextEncoder().encode(row.value).length > 8192 || /[\x00-\x08\x0a-\x1f\x7f]/.test(row.value)) {
+                || seen.has(name.toLowerCase()) || new TextEncoder().encode(row.value).length > 8192 || Array.from(row.value).some(char => { const code = char.charCodeAt(0); return (code < 32 && code !== 9) || code === 127; })) {
                 setHeaderError(t("ui.webhook.headersInvalid"));
                 return null;
             }
@@ -233,7 +233,7 @@ export function WebhookSettings() {
                     </div>
                     <div className="flex shrink-0 gap-1">
                         <Button size="icon" variant="ghost" title={t(testingId === item.id ? "ui.webhook.testing" : "ui.webhook.test")} disabled={testingId !== null} onClick={() => void test(item.id)}><Send className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => { const templates = defaultTemplates(t); beginEdit({ ...item, method: item.method || "POST", headers: item.headers || {}, titleTemplate: item.provider === "custom" ? "" : (item.titleTemplate || templates.titleTemplate), bodyTemplate: item.bodyTemplate || templates.bodyTemplate, secret: "" }, item); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title={t("ui.common.edit")} onClick={() => { const templates = defaultTemplates(t); beginEdit({ ...item, method: item.method || "POST", headers: item.headers || {}, titleTemplate: item.provider === "custom" ? "" : (item.titleTemplate || templates.titleTemplate), bodyTemplate: item.provider === "custom" ? item.bodyTemplate : (item.bodyTemplate || templates.bodyTemplate), secret: "" }, item); }}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" title={t("ui.common.delete")} onClick={() => void handleWebhookDelete(item.id, reload)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 </div>
